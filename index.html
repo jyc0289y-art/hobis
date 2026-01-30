@@ -13,7 +13,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
     <style>
-        /* HOBIS UI SYSTEM V4.0 (DATA SCIENCE READY) */
+        /* HOBIS UI SYSTEM V4.1 (DATA INTEGRITY FOCUSED) */
         :root {
             --hobis-green: #00ff33;
             --hobis-cyan: #00f7ff;
@@ -87,7 +87,7 @@
         .log-mode { color: var(--hobis-cyan); font-weight: bold; margin-right: 5px; }
         .log-date-range { color: var(--hobis-warn); font-size: 0.8rem; display:block; margin-top:2px; }
         .log-result { color: var(--hobis-green); font-weight: bold; display: block; margin-top: 4px; }
-        .log-inputs { display: block; color: #8fa3b0; font-size: 0.8rem; margin-top: 2px; }
+        .log-details { display: block; color: #8fa3b0; font-size: 0.8rem; margin-top: 2px; }
 
         /* GRID & LAYOUT */
         .grid-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px; }
@@ -97,7 +97,7 @@
             .header select, .header button { width: 100% !important; margin-top: 5px; }
         }
 
-        /* INPUTS */
+        /* CONTROLS */
         label { display: block; color: #8fa3b0; margin-bottom: 5px; font-size: 0.85rem; }
         input, select {
             background: var(--input-bg); border: 1px solid #3c4c56; color: var(--hobis-green);
@@ -123,7 +123,7 @@
             background: rgba(0,0,0,0.3); color: #8fa3b0; cursor: pointer; font-size: 0.8rem; touch-action: manipulation;
         }
 
-        /* TABS */
+        /* TABS & MODES */
         .tabs { display: flex; gap: 8px; margin-bottom: 20px; }
         .tab-btn {
             flex: 1; background: #15191d; border: 1px solid var(--hobis-border); color: #5f7481;
@@ -145,7 +145,7 @@
             background: rgba(0, 255, 51, 0.15); color: var(--hobis-green); box-shadow: 0 0 5px rgba(0, 255, 51, 0.1);
         }
 
-        /* DYNAMIC LISTS */
+        /* LISTS */
         .list-item {
             background: rgba(255, 255, 255, 0.02);
             border-left: 3px solid var(--hobis-border); padding: 10px; 
@@ -156,7 +156,7 @@
             cursor: pointer; font-size: 1.5rem; padding: 10px; line-height: 0.8; z-index: 5;
         }
 
-        /* INFO & CHART */
+        /* CHART & INFO */
         .spec-mini { font-size: 0.75rem; color: #5f7481; margin-top: 4px; }
         .tech-note {
             margin-top: 10px; padding: 10px; border-radius: 4px; font-size: 0.85rem; line-height: 1.4; display: none;
@@ -180,7 +180,7 @@
 
 <div class="container">
     <div class="top-bar">
-        <h1>HOBIS v4.0</h1>
+        <h1>HOBIS v4.1</h1>
         <button class="fs-btn" onclick="toggleFullScreen()">&#x26F6; FULL SCREEN</button>
     </div>
 
@@ -245,13 +245,13 @@
 <script src="hobis_db.js"></script>
 
 <script>
-    // --- HOBIS KERNEL V4.0 ---
+    // --- HOBIS KERNEL V4.1 ---
     let currentMainTab = 'decay';
     let currentSubMode = 'decay_forward'; 
     let currentData = [];
     let myChart = null;
     let nucOptionsHTML = ""; 
-    let logHistory = []; // Structured Log Data
+    let logHistory = []; 
 
     const UNIT_ACT = { "Ci":1, "TBq":27.027, "GBq":0.027027, "Bq":2.7027e-11 };
     const UNIT_DOSE = { "mSv/h":1, "uSv/h":0.001, "R/h":10, "mR/h":0.01 };
@@ -294,44 +294,53 @@
     }
 
     // --- STRUCTURAL LOGGING & CSV EXPORT ---
-    function addToLog(params) {
-        // params: { mode, nucList, inputVal, inputUnit, resultVal, resultUnit, startStr, endStr, days, dist, shieldInfo }
+    // Log Data Object Schema
+    function createLogEntry() {
+        return {
+            timestamp: "", dbSource: "", mode: "", 
+            totalInputVal: "", inputUnit: "",
+            targetVal: "", targetUnit: "",
+            resultVal: "", resultUnit: "",
+            startDate: "", endDate: "", duration: "", 
+            distance: "", shieldMat: "", shieldThick: "",
+            sourceJSON: ""
+        };
+    }
+
+    function addToLog(dataObj) {
+        // Enrich with common data
         const now = new Date();
-        const timeStr = now.toLocaleDateString() + ' ' + now.toLocaleTimeString();
+        dataObj.timestamp = now.toLocaleDateString() + ' ' + now.toLocaleTimeString();
+        dataObj.dbSource = document.getElementById('dbSelector').value;
         
-        // Save structured data
-        logHistory.push({
-            timestamp: timeStr,
-            mode: params.mode,
-            nuclides: params.nucList || "-",
-            inputVal: params.inputVal || "",
-            inputUnit: params.inputUnit || "",
-            resultVal: params.resultVal || "",
-            resultUnit: params.resultUnit || "",
-            startDate: params.startStr || "",
-            endDate: params.endStr || "",
-            days: params.days || "",
-            distance: params.dist || "",
-            shieldInfo: params.shieldInfo || ""
-        });
+        logHistory.push(dataObj); // Save Structured Data
 
-        // UI Display (Summarized)
-        let summaryInputs = `Src: ${params.nucList}`;
-        if(params.inputVal) summaryInputs += ` (${params.inputVal} ${params.inputUnit})`;
-        if(params.dist) summaryInputs += ` @ ${params.dist}m`;
-        if(params.shieldInfo) summaryInputs += ` | ${params.shieldInfo}`;
+        // UI Display (Human Readable)
+        let inputs = "";
+        if(dataObj.sourceJSON) {
+            try {
+                const src = JSON.parse(dataObj.sourceJSON);
+                inputs += `Src: ${src.length > 1 ? src.length + ' Sources' : src[0].id}`;
+            } catch(e) { inputs += "Src: Data"; }
+        }
+        if(dataObj.totalInputVal) inputs += ` (Total: ${dataObj.totalInputVal} ${dataObj.inputUnit})`;
+        if(dataObj.targetVal) inputs += ` | Target: ${dataObj.targetVal} ${dataObj.targetUnit}`;
+        if(dataObj.distance) inputs += ` @ ${dataObj.distance}m`;
+        
+        let dates = "";
+        if(dataObj.startDate && dataObj.endDate) dates = `<div class="log-date-range">📅 ${dataObj.startDate} → ${dataObj.endDate} (${dataObj.duration}d)</div>`;
+        else if(dataObj.endDate) dates = `<div class="log-date-range">📅 Target: ${dataObj.endDate} (${dataObj.duration}d)</div>`;
 
-        let dateDisp = "";
-        if(params.startStr && params.endStr) dateDisp = `<div class="log-date-range">📅 ${params.startStr} -> ${params.endStr} (${params.days}d)</div>`;
-        else if(params.endStr) dateDisp = `<div class="log-date-range">📅 Target: ${params.endStr}</div>`;
+        let resultDisp = `${dataObj.resultVal} ${dataObj.resultUnit}`;
+        if(dataObj.shieldMat) resultDisp = `${dataObj.resultVal} ${dataObj.resultUnit} (${dataObj.shieldMat})`;
 
         const logItem = `
             <div class="log-item">
-                <span class="log-time">[${timeStr}]</span>
-                <div><span class="log-mode">${params.mode}</span></div>
-                <div class="log-inputs">${summaryInputs}</div>
-                ${dateDisp}
-                <div class="log-result">>> ${params.resultVal} ${params.resultUnit}</div>
+                <span class="log-time">[${dataObj.timestamp}]</span>
+                <div><span class="log-mode">${dataObj.mode}</span></div>
+                <div class="log-details">${inputs}</div>
+                ${dates}
+                <div class="log-result">>> ${resultDisp}</div>
             </div>`;
         
         const container = document.getElementById('logContainer');
@@ -347,27 +356,21 @@
     function downloadCSV() {
         if(logHistory.length === 0) { alert("No logs to export."); return; }
         
-        // BOM for Excel UTF-8
-        let csvContent = "\uFEFFTimestamp,Mode,Nuclides,Input_Val,Input_Unit,Result_Val,Result_Unit,Start_Date,End_Date,Duration_Days,Distance_m,Shield_Info\n";
+        // CSV Header (Analysis Friendly)
+        let csvContent = "\uFEFFTimestamp,DB_Source,Mode,Total_Input_Val,Input_Unit,Target_Val,Target_Unit,Result_Val,Result_Unit,Start_Date,End_Date,Duration_Days,Distance_m,Shield_Mat,Shield_Thick_mm,Source_JSON\n";
         
-        logHistory.forEach(row => {
-            // Helper to escape commas
-            const esc = (txt) => `"${String(txt).replace(/"/g, '""')}"`;
-            
-            csvContent += [
-                esc(row.timestamp),
-                esc(row.mode),
-                esc(row.nuclides),
-                row.inputVal,
-                esc(row.inputUnit),
-                row.resultVal,
-                esc(row.resultUnit),
-                esc(row.startDate),
-                esc(row.endDate),
-                row.days,
-                row.distance,
-                esc(row.shieldInfo)
-            ].join(",") + "\n";
+        logHistory.forEach(r => {
+            const esc = (txt) => `"${String(txt || "").replace(/"/g, '""')}"`;
+            const row = [
+                esc(r.timestamp), esc(r.dbSource), esc(r.mode),
+                r.totalInputVal, esc(r.inputUnit),
+                r.targetVal, esc(r.targetUnit),
+                r.resultVal, esc(r.resultUnit),
+                esc(r.startDate), esc(r.endDate), r.duration,
+                r.distance, esc(r.shieldMat), r.shieldThick,
+                esc(r.sourceJSON)
+            ].join(",");
+            csvContent += row + "\n";
         });
 
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -389,7 +392,6 @@
         
         const switchId = tab === 'decay' ? 'decayModeSwitch' : 'shieldModeSwitch';
         const otherId = tab === 'decay' ? 'shieldModeSwitch' : 'decayModeSwitch';
-        
         document.getElementById(switchId).style.display = 'flex';
         document.getElementById(otherId).style.display = 'none';
         
@@ -576,7 +578,7 @@
         return days;
     }
 
-    // --- CALC CORE & LOG PARAM BUILDING ---
+    // --- CALC CORE ---
     function calculate() {
         let manualDataCache = {}; 
         function getReadyNuc(id) {
@@ -589,17 +591,19 @@
             return data;
         }
 
+        const entry = createLogEntry();
+
         // 1. DECAY FWD
         if(currentSubMode === 'decay_forward') {
+            entry.mode = "DECAY_FWD";
             const outUnit = document.getElementById('outUnit').value;
             const d1Str = document.getElementById('dateStart').value;
             const d2Str = document.getElementById('dateEnd').value;
-            const d1 = new Date(d1Str);
-            const d2 = new Date(d2Str);
-            const elapsedDays = (d2 - d1) / (86400000);
+            const elapsedDays = (new Date(d2Str) - new Date(d1Str)) / (86400000);
             
-            let totalActivityEnd = 0; let sources = []; let logNucs = [];
-            
+            let totalActivityEnd = 0; let sources = []; let logSources = [];
+            let totalInputCi = 0;
+
             document.querySelectorAll('.source-row').forEach(row => {
                 const id = row.querySelector('.src-select').value;
                 const val = parseFloat(row.querySelector('.src-val').value) || 0;
@@ -607,26 +611,24 @@
                 const nuc = getReadyNuc(id);
                 if(nuc && val > 0) {
                     const A0_Ci = val * UNIT_ACT[unit]; 
+                    totalInputCi += A0_Ci;
                     const hl = getHLDays(nuc);
                     totalActivityEnd += A0_Ci * Math.pow(0.5, elapsedDays/hl);
                     sources.push({ nuc:nuc, A0:A0_Ci, hl:hl });
-                    logNucs.push(`${nuc.id}(${val}${unit})`);
+                    logSources.push({ id: nuc.id, val: val, unit: unit });
                 }
             });
 
-            const finalVal = totalActivityEnd * (1/UNIT_ACT[outUnit]);
-            const resStr = `${finalVal.toExponential(4)}`;
-            showResult(resStr + ` ${outUnit}`, `Elapsed: ${elapsedDays.toFixed(1)} days`);
-            
-            addToLog({
-                mode: "DECAY_FWD",
-                nucList: logNucs.join(", "),
-                startStr: d1Str,
-                endStr: d2Str,
-                days: elapsedDays.toFixed(1),
-                resultVal: finalVal.toExponential(4),
-                resultUnit: outUnit
-            });
+            // Populate Log
+            entry.totalInputVal = (totalInputCi * (1/UNIT_ACT[outUnit])).toExponential(4); // Approx sum in out unit
+            entry.inputUnit = outUnit + " (Eq)";
+            entry.sourceJSON = JSON.stringify(logSources);
+            entry.startDate = d1Str; entry.endDate = d2Str; entry.duration = elapsedDays.toFixed(1);
+            entry.resultVal = (totalActivityEnd * (1/UNIT_ACT[outUnit])).toExponential(4);
+            entry.resultUnit = outUnit;
+
+            showResult(`${entry.resultVal} ${entry.resultUnit}`, `Elapsed: ${elapsedDays.toFixed(1)} days`);
+            addToLog(entry);
 
             // CHART
             const labels = []; const data = []; let steps = 100;
@@ -636,11 +638,12 @@
                 sources.forEach(src => { sumAtT += src.A0 * Math.pow(0.5, t/src.hl); });
                 labels.push(t.toFixed(1)); data.push(sumAtT * (1/UNIT_ACT[outUnit]));
             }
-            drawChart(labels, data, `Total Activity`, 'Days', elapsedDays, finalVal);
+            drawChart(labels, data, `Total Activity`, 'Days', elapsedDays, parseFloat(entry.resultVal));
         }
 
         // 2. DECAY REV
         else if(currentSubMode === 'decay_reverse') {
+            entry.mode = "DECAY_REV";
             const id = document.getElementById('nucSelect').value;
             const A0 = parseFloat(document.getElementById('inA0').value);
             const inUnit = document.getElementById('unitA0').value;
@@ -656,19 +659,14 @@
             const dTarget = new Date(new Date(d1Str).getTime() + (days * 86400000));
             const dTargetStr = dTarget.toISOString().split('T')[0];
             
-            showResult(`${days.toFixed(1)} Days`, `Reach: ${dTargetStr}`);
-            
-            addToLog({
-                mode: "DECAY_REV",
-                nucList: nuc.id,
-                inputVal: A0,
-                inputUnit: inUnit,
-                resultVal: At,
-                resultUnit: inUnit + " (Target)",
-                startStr: d1Str,
-                endStr: dTargetStr,
-                days: days.toFixed(1)
-            });
+            entry.sourceJSON = JSON.stringify([{id:nuc.id, val:A0, unit:inUnit}]);
+            entry.totalInputVal = A0; entry.inputUnit = inUnit;
+            entry.targetVal = At; entry.targetUnit = inUnit;
+            entry.startDate = d1Str; entry.endDate = dTargetStr; entry.duration = days.toFixed(1);
+            entry.resultVal = days.toFixed(1); entry.resultUnit = "Days";
+
+            showResult(entry.resultVal + " " + entry.resultUnit, `Reach: ${dTargetStr}`);
+            addToLog(entry);
 
             const labels=[]; const data=[]; let steps=100;
             for(let i=0; i<=steps; i++) {
@@ -679,11 +677,12 @@
 
         // 3. SHIELD FWD
         else if(currentSubMode === 'shield_forward') {
+            entry.mode = "SHIELD_FWD";
             const dist = parseFloat(document.getElementById('inDist').value)||1;
             const distFactor = 1/(dist*dist);
             const outType = document.getElementById('outType').value;
             const outUnit = document.getElementById('outUnit').value;
-            let sources = []; let layers = []; let logNucs=[]; let logLay=[];
+            let sources = []; let layers = []; let logSources = []; let logLayers = [];
 
             document.querySelectorAll('.source-row').forEach(row => {
                 const id = row.querySelector('.src-select').value;
@@ -692,7 +691,7 @@
                 const nuc = getReadyNuc(id);
                 if(nuc && val > 0) {
                     sources.push({ nuc:nuc, A0: val * UNIT_ACT[unit] });
-                    logNucs.push(`${nuc.id}(${val}${unit})`);
+                    logSources.push({ id: nuc.id, val: val, unit: unit });
                 }
             });
 
@@ -700,11 +699,12 @@
                 const m = l.querySelector('.mat-select').value;
                 const t = parseFloat(l.querySelector('.thk-input').value)||0;
                 layers.push({ mat: m, thk: t });
-                logLay.push(`${m}:${t}mm`);
+                logLayers.push(`${m}:${t}mm`);
             });
 
-            let finalVal = 0; 
+            let finalVal = 0; let totalInputCi = 0;
             sources.forEach(src => {
+                totalInputCi += src.A0;
                 let trans = 1.0;
                 layers.forEach(l => {
                     let hvl = (src.nuc.hvl && src.nuc.hvl[l.mat]) ? src.nuc.hvl[l.mat] : (l.mat==='Lead'?src.nuc.hvl['Lead']:0);
@@ -718,16 +718,17 @@
             if(outType === 'dose') finalVal *= (1/UNIT_DOSE[outUnit]);
             else finalVal *= (1/UNIT_ACT[outUnit]);
 
-            showResult(`${finalVal.toExponential(4)} ${outUnit}`, outType==='dose' ? `Dose @ ${dist}m` : `Eff. Activity`);
-            
-            addToLog({
-                mode: "SHIELD_FWD",
-                nucList: logNucs.join(", "),
-                dist: dist,
-                shieldInfo: logLay.join(" + "),
-                resultVal: finalVal.toExponential(4),
-                resultUnit: outUnit
-            });
+            entry.sourceJSON = JSON.stringify(logSources);
+            entry.distance = dist;
+            entry.shieldMat = logLayers.join("+"); // Composite
+            entry.resultVal = finalVal.toExponential(4);
+            entry.resultUnit = outUnit;
+            // Approx input total for log reference (Activity sum)
+            entry.totalInputVal = totalInputCi.toExponential(2);
+            entry.inputUnit = "Ci (Sum)";
+
+            showResult(`${entry.resultVal} ${outUnit}`, outType==='dose' ? `Dose @ ${dist}m` : `Eff. Activity`);
+            addToLog(entry);
 
             if(layers.length > 0) {
                 const primMat = layers[0].mat; const primThk = layers[0].thk;
@@ -749,12 +750,13 @@
                     if(outType==='dose') sumVal *= (1/UNIT_DOSE[outUnit]); else sumVal *= (1/UNIT_ACT[outUnit]);
                     data.push(sumVal); labels.push(x.toFixed(1));
                 }
-                drawChart(labels, data, `${outType.toUpperCase()} vs ${primMat}`, 'mm', primThk, finalVal);
+                drawChart(labels, data, `${outType.toUpperCase()} vs ${primMat}`, 'mm', primThk, parseFloat(entry.resultVal));
             }
         }
 
         // 4. SHIELD REV
         else if(currentSubMode === 'shield_reverse') {
+            entry.mode = "SHIELD_REV";
             const id = document.getElementById('nucSelect').value;
             const inVal = parseFloat(document.getElementById('inVal').value);
             const inUnit = document.getElementById('inUnit').value;
@@ -768,7 +770,7 @@
 
             let reqTrans = 1.0; let startBaseForGraph = 0;
             if (targetType === 'dose') {
-                let ci = inVal * UNIT_ACT[inUnit]; // Input Act
+                let ci = inVal * UNIT_ACT[inUnit]; 
                 let doseAtDist = nuc.gamma * ci * (1/(dist*dist));
                 reqTrans = (targetVal * UNIT_DOSE[targetUnit]) / doseAtDist;
                 startBaseForGraph = doseAtDist * (1/UNIT_DOSE[targetUnit]);
@@ -786,18 +788,16 @@
             
             const thk = hvl * (Math.log(reqTrans)/Math.log(0.5));
             
-            showResult(`${thk.toFixed(2)} mm`, `${mat} (HVL: ${hvl}mm)`);
-            
-            addToLog({
-                mode: "SHIELD_REV",
-                nucList: nuc.id,
-                inputVal: inVal,
-                inputUnit: inUnit,
-                resultVal: thk.toFixed(2),
-                resultUnit: `mm (${mat})`,
-                dist: dist,
-                shieldInfo: `Target: ${targetVal}${targetUnit}`
-            });
+            entry.sourceJSON = JSON.stringify([{id:nuc.id}]);
+            entry.totalInputVal = inVal; entry.inputUnit = inUnit;
+            entry.targetVal = targetVal; entry.targetUnit = targetUnit;
+            entry.distance = dist;
+            entry.shieldMat = mat;
+            entry.resultVal = thk.toFixed(2);
+            entry.resultUnit = "mm";
+
+            showResult(entry.resultVal + " mm", `${mat} (HVL: ${hvl}mm)`);
+            addToLog(entry);
 
             const labels=[]; const data=[]; let steps=100; let maxThk = thk*1.5;
             for(let i=0; i<=steps; i++) {
