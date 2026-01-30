@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>HOBIS - Radiation Protection System</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+        /* HOBIS UI SYSTEM V3.2 (HIGH PRECISION GRAPHICS) */
+        :root {
+            --hobis-green: #00ff33;
+            --hobis-cyan: #00f7ff;
+            --hobis-bg: #0a0a0c;
+            --hobis-panel: #111418;
+            --hobis-border: #2a3b47;
+            --hobis-alert: #ff3300;
+            --hobis-warn: #ffcc00;
+            --hobis-grid: #1f2b33;
+            --hobis-marker: #ff9900;
+        }
+
+        body {
+            background-color: var(--hobis-bg);
+            color: var(--hobis-green);
+            font-family: 'Share Tech Mono', monospace;
+            margin: 0; padding: 10px; padding-bottom: 50px;
+            background-image: 
+                linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), 
+                linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+            background-size: 100% 2px, 3px 100%;
+        }
+
+        h1 {
+            font-family: 'Orbitron', sans-serif; text-align: center;
+            color: var(--hobis-cyan); text-shadow: 0 0 10px var(--hobis-cyan);
+            margin: 10px 0 20px 0; border-bottom: 2px solid var(--hobis-border); padding-bottom: 10px;
+        }
+
+        .container { max-width: 800px; margin: 0 auto; }
+
+        .panel {
+            background: var(--hobis-panel); border: 1px solid var(--hobis-border);
+            padding: 15px; margin-bottom: 15px; position: relative;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
+        }
+        .panel::before { content:""; position:absolute; top:-1px; left:-1px; width:8px; height:8px; border-top:2px solid var(--hobis-cyan); border-left:2px solid var(--hobis-cyan); }
+        .panel::after { content:""; position:absolute; bottom:-1px; right:-1px; width:8px; height:8px; border-bottom:2px solid var(--hobis-cyan); border-right:2px solid var(--hobis-cyan); }
+
+        .header {
+            color: var(--hobis-cyan); font-family: 'Orbitron', sans-serif;
+            font-size: 1.1rem; margin-bottom: 10px; border-bottom: 1px dashed var(--hobis-border);
+            display: flex; justify-content: space-between; align-items: center;
+        }
+
+        /* Mode Switcher */
+        .mode-switch {
+            display: flex; background: rgba(0,0,0,0.3); border-radius: 4px; margin-bottom: 15px; padding: 2px;
+        }
+        .mode-opt {
+            flex: 1; text-align: center; padding: 8px; cursor: pointer; color: #5f7481; font-weight: bold; transition: 0.2s;
+            font-size: 0.9rem;
+        }
+        .mode-opt.active {
+            background: rgba(0, 255, 51, 0.2); color: var(--hobis-green); border-radius: 2px;
+            box-shadow: 0 0 5px rgba(0, 255, 51, 0.2);
+        }
+
+        .info-display {
+            background: rgba(0, 247, 255, 0.05); border: 1px solid var(--hobis-cyan);
+            padding: 10px; margin-bottom: 15px; font-size: 0.9rem; color: #a0c0c0;
+            display: none; 
+        }
+        .info-key { color: var(--hobis-green); font-weight: bold; }
+        .info-unit { color: #5f7481; font-size: 0.8rem; margin-left: 2px; }
+
+        .tech-note {
+            margin-top: 10px; padding: 8px; border-radius: 4px;
+            font-size: 0.85rem; line-height: 1.3; display: none;
+        }
+        .note-warn { border: 1px solid var(--hobis-alert); background: rgba(255, 51, 0, 0.1); color: #ff9980; }
+        .note-info { border: 1px solid var(--hobis-cyan); background: rgba(0, 247, 255, 0.1); color: #ccffff; }
+
+        input, select {
+            background: #080a0c; border: 1px solid #3c4c56; color: var(--hobis-green);
+            padding: 10px; width: 100%; box-sizing: border-box;
+            font-family: 'Share Tech Mono', monospace; font-size: 1rem; margin-bottom: 5px; outline: none;
+        }
+        input:focus, select:focus { border-color: var(--hobis-cyan); box-shadow: 0 0 8px rgba(0, 247, 255, 0.2); }
+
+        .btn {
+            width: 100%; padding: 15px; background: rgba(0, 255, 51, 0.1);
+            border: 1px solid var(--hobis-green); color: var(--hobis-green);
+            font-family: 'Orbitron', sans-serif; font-weight: bold; font-size: 1.1rem;
+            cursor: pointer; transition: 0.2s; margin-top: 10px;
+        }
+        .btn:hover { background: var(--hobis-green); color: black; box-shadow: 0 0 15px var(--hobis-green); }
+        .btn-outline {
+            width: auto; padding: 5px 10px; border: 1px solid #3c4c56; 
+            background: transparent; color: #8fa3b0; cursor: pointer;
+        }
+
+        .tabs { display: flex; gap: 5px; margin-bottom: 15px; }
+        .tab-btn {
+            flex: 1; background: #15191d; border: 1px solid var(--hobis-border); color: #5f7481;
+            padding: 10px; cursor: pointer; font-family: 'Orbitron', sans-serif;
+        }
+        .tab-btn.active {
+            background: rgba(0, 247, 255, 0.1); color: var(--hobis-cyan); border-color: var(--hobis-cyan);
+        }
+
+        .row { display: flex; gap: 10px; margin-bottom: 10px; }
+        .col { flex: 1; } .col-2 { flex: 2; }
+        .hidden { display: none; }
+
+        .result-box {
+            background: rgba(0, 255, 51, 0.05); border: 1px solid var(--hobis-green);
+            padding: 15px; margin-top: 20px; display: none;
+        }
+        .res-val { font-size: 1.3rem; color: var(--hobis-cyan); font-weight: bold; }
+        
+        .shield-layer {
+            border-left: 2px solid var(--hobis-border); padding-left: 10px; 
+            margin-bottom: 5px; position: relative;
+        }
+        .del-layer { position: absolute; right: 0; top: 0; color: var(--hobis-alert); cursor: pointer; }
+
+        .chart-container {
+            margin-top: 20px; padding: 10px; background: rgba(0,0,0,0.3);
+            border: 1px solid var(--hobis-grid); border-radius: 4px;
+            height: 250px; position: relative;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>HOBIS v3.2</h1>
+
+    <div class="panel">
+        <div class="header">
+            <span>DATA LINK</span>
+            <select id="dbSelector" style="width:auto; padding:5px; height:30px;" onchange="loadDB()">
+                <option value="QSA">QSA (MAN-027)</option>
+                <option value="ICRP107">ICRP 107 (Smith & Stabin)</option>
+            </select>
+        </div>
+        <div style="font-size:0.8rem; color:#666;">
+            STATUS: <span id="sysStatus" style="color:var(--hobis-green)">INITIALIZING...</span>
+        </div>
+    </div>
+
+    <div class="tabs">
+        <button class="tab-btn active" onclick="setMainTab('decay')">DECAY</button>
+        <button class="tab-btn" onclick="setMainTab('shield')">SHIELDING</button>
+    </div>
+
+    <div id="mainPanel" class="panel">
+        <div class="header" id="panelTitle">DECAY OPERATION</div>
+
+        <div class="row">
+            <div class="col">
+                <label>Search</label>
+                <input type="text" id="nucSearch" placeholder="Type name..." onkeyup="filterNuclides()">
+            </div>
+            <div class="col">
+                <label>Select</label>
+                <select id="nucSelect" onchange="showNuclideInfo()"></select>
+            </div>
+        </div>
+
+        <div id="specPanel" class="info-display">
+            <div style="border-bottom: 1px dotted #3c4c56; margin-bottom:5px; padding-bottom:5px;">
+                <strong>TARGET SPECS:</strong> <span id="infoName" style="color:white"></span>
+            </div>
+            <div class="row" style="margin-bottom:0">
+                <div class="col"><span class="info-key">Half-Life:</span> <span id="infoHL">-</span></div>
+                <div class="col"><span class="info-key">Gamma(&Gamma;):</span> <span id="infoGamma">-</span> <span class="info-unit">mSv&middot;m&sup2;/h&middot;Ci</span></div>
+            </div>
+            <div style="margin-top:5px;"><span class="info-key">HVL Data:</span> <span id="infoHVL">-</span></div>
+            <div id="techNote" class="tech-note"></div>
+        </div>
+
+        <div id="decayModeSwitch" class="mode-switch">
+            <div class="mode-opt active" onclick="setSubMode('decay_forward', this)">FORWARD (Calc Activity)</div>
+            <div class="mode-opt" onclick="setSubMode('decay_reverse', this)">REVERSE (Calc Date)</div>
+        </div>
+        <div id="shieldModeSwitch" class="mode-switch hidden">
+            <div class="mode-opt active" onclick="setSubMode('shield_forward', this)">FORWARD (Calc Dose)</div>
+            <div class="mode-opt" onclick="setSubMode('shield_reverse', this)">REVERSE (Calc Thickness)</div>
+        </div>
+
+        <div id="inputArea"></div>
+
+        <button class="btn" onclick="calculate()">EXECUTE CALCULATION</button>
+
+        <div id="resultBox" class="result-box">
+            <div class="row">
+                <div class="col">RESULT:</div>
+                <div class="col-2 res-val" id="resMain">-</div>
+            </div>
+            <div style="font-size:0.9rem; color:#8fa3b0;" id="resSub"></div>
+            <div class="chart-container"><canvas id="opsChart"></canvas></div>
+        </div>
+    </div>
+</div>
+
+<script src="hobis_db.js"></script>
+
+<script>
+    // --- HOBIS KERNEL V3.2 ---
+    let currentMainTab = 'decay';
+    let currentSubMode = 'decay_forward'; 
+    let currentData = [];
+    let myChart = null;
+    
+    // Units
+    const UNIT_ACT = { "Ci":1, "TBq":27.027, "GBq":0.027027, "Bq":2.7027e-11 };
+    const UNIT_DOSE = { "mSv/h":1, "uSv/h":0.001, "R/h":10, "mR/h":0.01 };
+    
+    window.onload = function() {
+        if(typeof GLOBAL_DB === 'undefined') {
+            document.getElementById('sysStatus').innerText = "ERROR: hobis_db.js MISSING";
+            document.getElementById('sysStatus').style.color = "red";
+            alert("Error: 'hobis_db.js' file is missing.");
+        } else {
+            loadDB();
+            renderInputs();
+        }
+    };
+
+    function loadDB() {
+        const type = document.getElementById('dbSelector').value;
+        currentData = GLOBAL_DB[type] || [];
+        document.getElementById('sysStatus').innerText = `LINKED: ${type} (${currentData.length} UNITS)`;
+        filterNuclides();
+    }
+
+    function filterNuclides() {
+        const term = document.getElementById('nucSearch').value.toUpperCase();
+        const sel = document.getElementById('nucSelect');
+        sel.innerHTML = "";
+        sel.add(new Option("[ MANUAL INPUT ]", "MANUAL"));
+        const filtered = currentData.filter(n => n.id.toUpperCase().includes(term));
+        filtered.forEach(n => sel.add(new Option(n.id, n.id)));
+        if(filtered.length > 0) sel.value = filtered[0].id;
+        showNuclideInfo();
+    }
+
+    function showNuclideInfo() {
+        const id = document.getElementById('nucSelect').value;
+        const panel = document.getElementById('specPanel');
+        const dbType = document.getElementById('dbSelector').value;
+        
+        if(id === "MANUAL") { panel.style.display = "none"; return; }
+
+        const nuc = currentData.find(n => n.id === id);
+        if(nuc) {
+            panel.style.display = "block";
+            document.getElementById('infoName').innerText = nuc.id;
+            let days = getHLDays(nuc);
+            document.getElementById('infoHL').innerText = `${nuc.hl}${nuc.unit} (${days.toFixed(2)}d)`;
+            document.getElementById('infoGamma').innerText = nuc.gamma; 
+            let hvlText = "";
+            for (const [mat, val] of Object.entries(nuc.hvl)) hvlText += `${mat}: ${val}mm / `;
+            document.getElementById('infoHVL').innerText = hvlText;
+
+            // Guide
+            const noteBox = document.getElementById('techNote');
+            noteBox.style.display = 'none'; noteBox.className = 'tech-note';
+            if (['Ir-192', 'Se-75'].includes(nuc.id)) {
+                if (dbType === 'ICRP107') {
+                    noteBox.innerText = "⚠️ [주의] 비필터링(Unfiltered) 선원 기준. 실제 장비보다 HVL이 얇게 계산될 수 있음.";
+                    noteBox.classList.add('note-warn'); noteBox.style.display = 'block';
+                } else if (dbType === 'QSA') {
+                    noteBox.innerText = "✅ [안내] 캡슐화된 산업용 선원 기준. 현장 장비 사용 시 적합.";
+                    noteBox.classList.add('note-info'); noteBox.style.display = 'block';
+                }
+            } else if (nuc.id === 'Co-60') {
+                if (dbType === 'ICRP107') {
+                    noteBox.innerText = "🛡️ [안내] 광폭빔(Broad-beam) 조건. 산란선 고려한 안전 설계용.";
+                    noteBox.classList.add('note-info'); noteBox.style.display = 'block';
+                }
+            }
+        }
+    }
+
+    function getHLDays(nuc) {
+        let days = nuc.hl;
+        if(nuc.unit==='h') days/=24; if(nuc.unit==='m') days/=(24*60); if(nuc.unit==='y') days*=365.25;
+        return days;
+    }
+
+    function setMainTab(tab) {
+        currentMainTab = tab;
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        event.target.classList.add('active');
+        document.getElementById('panelTitle').innerText = tab === 'decay' ? "DECAY OPERATION" : "SHIELDING OPERATION";
+        
+        if(tab === 'decay') {
+            document.getElementById('decayModeSwitch').classList.remove('hidden');
+            document.getElementById('shieldModeSwitch').classList.add('hidden');
+            setSubMode('decay_forward', document.querySelector('#decayModeSwitch .mode-opt'));
+        } else {
+            document.getElementById('decayModeSwitch').classList.add('hidden');
+            document.getElementById('shieldModeSwitch').classList.remove('hidden');
+            setSubMode('shield_forward', document.querySelector('#shieldModeSwitch .mode-opt'));
+        }
+    }
+
+    function setSubMode(mode, el) {
+        currentSubMode = mode;
+        const parent = el.parentElement;
+        parent.querySelectorAll('.mode-opt').forEach(opt => opt.classList.remove('active'));
+        el.classList.add('active');
+        renderInputs();
+        document.getElementById('resultBox').style.display = 'none';
+    }
+
+    // --- UI RENDERER ---
+    function renderInputs() {
+        const area = document.getElementById('inputArea');
+        area.innerHTML = "";
+        
+        // 1. DECAY FORWARD
+        if(currentSubMode === 'decay_forward') {
+            area.innerHTML = `
+                <div class="row">
+                    <div class="col-2"><input type="number" id="inA0" placeholder="Initial Activity (A0)"></div>
+                    <div class="col"><select id="unitA0">${getUnitOpts('act')}</select></div>
+                </div>
+                <div class="row">
+                    <div class="col"><label>Start Date</label><input type="date" id="dateStart"></div>
+                    <div class="col"><label>Eval Date</label><input type="date" id="dateEnd"></div>
+                </div>`;
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('dateStart').value = today;
+            document.getElementById('dateEnd').value = today;
+        } 
+        // 2. DECAY REVERSE
+        else if(currentSubMode === 'decay_reverse') {
+            area.innerHTML = `
+                <div class="row">
+                    <div class="col-2"><input type="number" id="inA0" placeholder="Initial Activity (A0)"></div>
+                    <div class="col"><select id="unitA0">${getUnitOpts('act')}</select></div>
+                </div>
+                <div class="row">
+                    <div class="col-2"><input type="number" id="inTargetAct" placeholder="Target Activity (At)"></div>
+                    <div class="col"><label style="font-size:0.7rem; color:#666;">Unit matches Initial</label></div>
+                </div>
+                <div class="row">
+                    <div class="col"><label>Start Date</label><input type="date" id="dateStart"></div>
+                </div>`;
+            document.getElementById('dateStart').value = new Date().toISOString().split('T')[0];
+        }
+        
+        // 3. SHIELD FORWARD
+        else if(currentSubMode === 'shield_forward') {
+            area.innerHTML = `
+                <div class="row">
+                    <div class="col"><label>Input Type</label>
+                        <select id="inputType" onchange="renderInputs()">
+                            <option value="act">Source Activity</option>
+                            <option value="dose">Measured Dose Rate</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-2"><input type="number" id="inVal" placeholder="Value"></div>
+                    <div class="col"><select id="inUnit">${getUnitOpts('act')}</select></div>
+                </div>
+                <div class="row" style="background:rgba(255,255,255,0.05); padding:5px;">
+                    <div class="col"><label>Distance (m)</label><input type="number" id="inDist" value="1"></div>
+                </div>
+                <div style="margin:10px 0; border-top:1px dashed #3c4c56; padding-top:10px;">
+                    <div class="header" style="font-size:0.9rem; border:none;">
+                        SHIELD LAYERS <button class="btn-outline" onclick="addLayer()">+ADD</button>
+                    </div>
+                    <div id="layerList"></div>
+                </div>
+                <div class="row">
+                    <div class="col"><label>Output Type</label>
+                         <select id="outType" onchange="updateOutUnit()">
+                            <option value="dose">Result Dose Rate</option>
+                            <option value="act">Effective Activity</option>
+                        </select>
+                    </div>
+                    <div class="col"><label>Output Unit</label>
+                        <select id="outUnit">${getUnitOpts('dose')}</select>
+                    </div>
+                </div>`;
+            if(document.getElementById('inputType').value === 'dose') {
+                document.getElementById('inUnit').innerHTML = getUnitOpts('dose');
+            }
+            addLayer();
+        }
+
+        // 4. SHIELD REVERSE (NEW: Updated for Dose/Act Target)
+        else if(currentSubMode === 'shield_reverse') {
+            area.innerHTML = `
+                 <div class="row">
+                    <div class="col"><label>Input Source</label>
+                        <select id="inputType" onchange="updateReverseInUnit()">
+                            <option value="act">Source Activity</option>
+                            <option value="dose">Measured Dose Rate</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-2"><input type="number" id="inVal" placeholder="Input Value"></div>
+                    <div class="col"><select id="inUnit">${getUnitOpts('act')}</select></div>
+                </div>
+                
+                <div class="row" style="margin-top:15px; border-top:1px dashed #3c4c56; padding-top:5px;">
+                    <div class="col"><label>Target Type</label>
+                        <select id="targetType" onchange="updateReverseTargetUnit()">
+                            <option value="dose">Target Dose Rate</option>
+                            <option value="act">Target Effective Activity</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-2"><input type="number" id="targetVal" placeholder="Target Value"></div>
+                    <div class="col"><select id="targetUnit">${getUnitOpts('dose')}</select></div>
+                </div>
+
+                <div class="row" style="background:rgba(255,255,255,0.05); padding:5px;">
+                    <div class="col"><label>Distance (m)</label><input type="number" id="inDist" value="1"></div>
+                </div>
+                 <div class="row">
+                    <div class="col"><label>Shield Material</label>
+                        <select id="targetMat">
+                            <option value="Lead">Lead (Pb)</option>
+                            <option value="Concrete">Concrete</option>
+                            <option value="Steel">Steel</option>
+                            <option value="Tungsten">Tungsten</option>
+                            <option value="DU">DU</option>
+                        </select>
+                    </div>
+                </div>`;
+        }
+    }
+
+    function getUnitOpts(type) {
+        if(type==='act') return '<option value="Ci">Ci</option><option value="TBq">TBq</option><option value="GBq">GBq</option><option value="Bq">Bq</option>';
+        if(type==='dose') return '<option value="mSv/h">mSv/h</option><option value="uSv/h">uSv/h</option><option value="R/h">R/h</option><option value="mR/h">mR/h</option>';
+    }
+    
+    function updateOutUnit() {
+        const type = document.getElementById('outType').value;
+        document.getElementById('outUnit').innerHTML = getUnitOpts(type);
+    }
+    
+    function updateReverseInUnit() {
+         const type = document.getElementById('inputType').value;
+         document.getElementById('inUnit').innerHTML = getUnitOpts(type);
+    }
+    
+    function updateReverseTargetUnit() {
+        const type = document.getElementById('targetType').value;
+        document.getElementById('targetUnit').innerHTML = getUnitOpts(type);
+    }
+
+    function addLayer() {
+        const div = document.createElement('div');
+        div.className = 'shield-layer';
+        div.innerHTML = `
+            <div class="del-layer" onclick="this.parentElement.remove()">x</div>
+            <div class="row" style="margin-bottom:0">
+                <div class="col-2">
+                    <select class="mat-select">
+                        <option value="Lead">Lead (Pb)</option>
+                        <option value="Concrete">Concrete</option>
+                        <option value="Steel">Steel</option>
+                        <option value="Tungsten">Tungsten</option>
+                        <option value="DU">DU</option>
+                    </select>
+                </div>
+                <div class="col"><input type="number" class="thk-input" placeholder="mm"></div>
+            </div>`;
+        document.getElementById('layerList').appendChild(div);
+    }
+
+    // --- CALCULATION ENGINE ---
+    function calculate() {
+        const id = document.getElementById('nucSelect').value;
+        let nuc = currentData.find(n => n.id === id);
+        if(id === "MANUAL") {
+            const h = prompt("Half-Life (days):"); const g = prompt("Gamma (mSv·m²/h·Ci):"); const l = prompt("Lead HVL (mm):");
+            if(!h || !g) return;
+            nuc = { id:"MANUAL", hl: parseFloat(h), unit:'d', gamma: parseFloat(g), hvl:{"Lead":parseFloat(l)||0} };
+        }
+        if(!nuc) return;
+        let hlDays = getHLDays(nuc);
+        
+        // 1. DECAY FORWARD
+        if(currentSubMode === 'decay_forward') {
+            const A0 = parseFloat(document.getElementById('inA0').value);
+            const unit = document.getElementById('unitA0').value;
+            if(!A0) return;
+            const d1 = new Date(document.getElementById('dateStart').value);
+            const d2 = new Date(document.getElementById('dateEnd').value);
+            const elapsedDays = (d2 - d1) / (86400000);
+            const res = A0 * Math.pow(0.5, elapsedDays / hlDays);
+            
+            showResult(`${res.toExponential(4)} ${unit}`, `Elapsed: ${elapsedDays.toFixed(1)} days`);
+            
+            // GRAPH
+            const labels = []; const data = [];
+            let steps = 100; // Hi-Res
+            let range = elapsedDays > 0 ? elapsedDays * 1.2 : hlDays*2;
+            for(let i=0; i<=steps; i++) {
+                let t = i * (range/steps);
+                labels.push(t.toFixed(1));
+                data.push(A0 * Math.pow(0.5, t / hlDays));
+            }
+            drawChart(labels, data, `Activity (${unit})`, 'Days', elapsedDays, res);
+        }
+
+        // 2. DECAY REVERSE
+        else if(currentSubMode === 'decay_reverse') {
+            const A0 = parseFloat(document.getElementById('inA0').value);
+            const At = parseFloat(document.getElementById('inTargetAct').value);
+            if(!A0 || !At) return;
+            const ratio = At / A0;
+            if(ratio >= 1) { alert("Target must be lower than Initial"); return; }
+            const days = hlDays * (Math.log(ratio) / Math.log(0.5));
+            const d1 = new Date(document.getElementById('dateStart').value);
+            const dTarget = new Date(d1.getTime() + (days * 86400000));
+            showResult(`${days.toFixed(1)} Days`, `Reach Date: ${dTarget.toISOString().split('T')[0]}`);
+            
+            // GRAPH
+            const labels = []; const data = [];
+            let steps = 100; 
+            for(let i=0; i<=steps; i++) {
+                let t = i * (days*1.2/steps);
+                labels.push(t.toFixed(1));
+                data.push(A0 * Math.pow(0.5, t / hlDays));
+            }
+            drawChart(labels, data, `Decay to Target`, 'Days', days, At);
+        }
+
+        // 3. SHIELD FORWARD
+        else if(currentSubMode === 'shield_forward') {
+            const inType = document.getElementById('inputType').value;
+            const inVal = parseFloat(document.getElementById('inVal').value);
+            const inUnit = document.getElementById('inUnit').value;
+            const dist = parseFloat(document.getElementById('inDist').value) || 1;
+            const outType = document.getElementById('outType').value;
+            const outUnit = document.getElementById('outUnit').value;
+            if(!inVal) return;
+
+            let baseCi = 0; let baseDose = 0;
+            if(inType === 'act') {
+                baseCi = inVal * UNIT_ACT[inUnit];
+                baseDose = nuc.gamma * baseCi; 
+            } else {
+                let rawDose = inVal * UNIT_DOSE[inUnit];
+                baseDose = rawDose;
+                baseCi = baseDose / nuc.gamma; 
+            }
+
+            let trans = 1.0;
+            let primaryHVL = 0; let totalThk = 0; let primaryMat = "";
+            document.querySelectorAll('.shield-layer').forEach((l, idx) => {
+                const mat = l.querySelector('.mat-select').value;
+                const thk = parseFloat(l.querySelector('.thk-input').value) || 0;
+                let hvl = (nuc.hvl && nuc.hvl[mat]) ? nuc.hvl[mat] : (mat==='Lead'?nuc.hvl['Lead']:0);
+                if(hvl > 0 && thk > 0) trans *= Math.pow(0.5, thk/hvl);
+                if(idx===0) { primaryMat = mat; primaryHVL = hvl; totalThk = thk; }
+            });
+
+            const distFactor = 1/(dist*dist);
+            let resultVal = 0;
+            
+            if(outType === 'dose') {
+                resultVal = baseDose * trans * distFactor * (1/UNIT_DOSE[outUnit]);
+                showResult(`${resultVal.toExponential(4)} ${outUnit}`, `Trans: ${trans.toExponential(3)} (@${dist}m)`);
+            } else {
+                resultVal = baseCi * trans * (1/UNIT_ACT[outUnit]);
+                showResult(`${resultVal.toExponential(4)} ${outUnit}`, `Effective Activity`);
+            }
+            
+            // GRAPH
+            if(primaryHVL > 0) {
+                 const labels = []; const data = [];
+                 let maxThk = totalThk*2 || primaryHVL*5;
+                 let steps = 100;
+                 let d0 = (outType==='dose') ? baseDose*distFactor : baseCi;
+                 
+                 for(let i=0; i<=steps; i++) {
+                     let x = i*(maxThk/steps);
+                     let y = d0 * Math.pow(0.5, x/primaryHVL);
+                     if(outType==='dose') y *= (1/UNIT_DOSE[outUnit]);
+                     else y *= (1/UNIT_ACT[outUnit]);
+                     
+                     labels.push(x.toFixed(1));
+                     data.push(y);
+                 }
+                 drawChart(labels, data, `${outType.toUpperCase()} vs ${primaryMat} Thickness`, 'mm', totalThk, resultVal);
+            }
+        }
+
+        // 4. SHIELD REVERSE (NEW: Activity OR Dose Target)
+        else if(currentSubMode === 'shield_reverse') {
+            const inType = document.getElementById('inputType').value;
+            const inVal = parseFloat(document.getElementById('inVal').value);
+            const inUnit = document.getElementById('inUnit').value;
+            
+            const targetType = document.getElementById('targetType').value;
+            const targetVal = parseFloat(document.getElementById('targetVal').value);
+            const targetUnit = document.getElementById('targetUnit').value;
+            
+            const dist = parseFloat(document.getElementById('inDist').value) || 1;
+            const mat = document.getElementById('targetMat').value;
+            
+            if(!inVal || !targetVal) return;
+
+            // Normalize Inputs to Common Base (Dose @ Dist, or Activity)
+            // Strategy: Calculate 'Required Transmission' (Ratio)
+            
+            let reqTrans = 1.0;
+            let startValDisp = 0; // For Graph
+            
+            if (targetType === 'dose') {
+                // Working in Dose domain
+                let doseAtDist = 0;
+                const distFactor = 1/(dist*dist);
+                
+                if(inType === 'act') {
+                    let ci = inVal * UNIT_ACT[inUnit];
+                    doseAtDist = nuc.gamma * ci * distFactor;
+                } else {
+                    let dose1m = inVal * UNIT_DOSE[inUnit];
+                    doseAtDist = dose1m * distFactor; 
+                }
+                
+                let targetDoseMsV = targetVal * UNIT_DOSE[targetUnit];
+                reqTrans = targetDoseMsV / doseAtDist;
+                
+                // For graph display, we need start value in Target Unit
+                startValDisp = doseAtDist * (1/UNIT_DOSE[targetUnit]);
+
+            } else {
+                // Working in Activity domain (Effective Activity)
+                // Distance irrelevant for Activity reduction ratio
+                let startAct = 0;
+                if (inType === 'act') {
+                    startAct = inVal * UNIT_ACT[inUnit];
+                } else {
+                    // Start from Dose -> Activity
+                    let dose = inVal * UNIT_DOSE[inUnit];
+                    startAct = dose / nuc.gamma;
+                }
+                
+                let targetAct = targetVal * UNIT_ACT[targetUnit];
+                reqTrans = targetAct / startAct;
+                
+                startValDisp = startAct * (1/UNIT_ACT[targetUnit]);
+            }
+
+            if(reqTrans >= 1) { 
+                showResult("0 mm", "Target > Current (No Shield Needed)"); return; 
+            }
+            
+            let hvl = (nuc.hvl && nuc.hvl[mat]) ? nuc.hvl[mat] : (mat==='Lead'?nuc.hvl['Lead']:0);
+            if(hvl === 0) { alert(`No HVL data for ${mat}.`); return; }
+            
+            let thk = hvl * (Math.log(reqTrans) / Math.log(0.5));
+            showResult(`${thk.toFixed(2)} mm`, `Material: ${mat} (HVL: ${hvl}mm)`);
+            
+            // GRAPH
+            const labels = []; const data = [];
+            let maxThk = thk * 1.5;
+            let steps = 100;
+            
+            for(let i=0; i<=steps; i++) {
+                let x = i*(maxThk/steps);
+                let y = startValDisp * Math.pow(0.5, x/hvl);
+                labels.push(x.toFixed(1));
+                data.push(y);
+            }
+            drawChart(labels, data, `${targetType.toUpperCase()} vs ${mat}`, 'mm', thk, targetVal);
+        }
+    }
+
+    function showResult(main, sub) {
+        document.getElementById('resMain').innerText = main;
+        document.getElementById('resSub').innerText = sub;
+        document.getElementById('resultBox').style.display = 'block';
+    }
+
+    // UPDATED DRAW CHART (Continuous + Marker)
+    function drawChart(labels, data, labelStr, xTitle, markX, markY) {
+        if(myChart) myChart.destroy();
+        const ctx = document.getElementById('opsChart').getContext('2d');
+        Chart.defaults.color = '#5f7481';
+        Chart.defaults.font.family = "'Share Tech Mono', monospace";
+        
+        // Find closest index for marker
+        let closestIdx = 0;
+        let minDiff = 999999;
+        labels.forEach((l, i) => {
+            let diff = Math.abs(parseFloat(l) - markX);
+            if(diff < minDiff) { minDiff = diff; closestIdx = i; }
+        });
+
+        // Create Point Highlight Data
+        // Only one point at the result index, others null
+        const pointData = new Array(data.length).fill(null);
+        pointData[closestIdx] = markY;
+
+        myChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: labelStr,
+                        data: data,
+                        borderColor: '#00ff33',
+                        backgroundColor: 'rgba(0, 255, 51, 0.1)',
+                        borderWidth: 2,
+                        pointRadius: 0, // Smooth line by default
+                        pointHitRadius: 10,
+                        tension: 0.4, // Smoother curve
+                        fill: true,
+                        order: 2
+                    },
+                    {
+                        label: 'Result',
+                        data: pointData,
+                        borderColor: '#ff9900',
+                        backgroundColor: '#ff9900',
+                        pointRadius: 6,
+                        pointHoverRadius: 8,
+                        type: 'scatter', // Distinct point
+                        order: 1
+                    }
+                ]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                interaction: { mode: 'index', intersect: false },
+                plugins: { legend: { display:true, labels:{color:'#00f7ff'} } },
+                scales: {
+                    x: { title:{display:true, text:xTitle, color:'#00f7ff'}, grid:{color:'#1f2b33'} },
+                    y: { grid:{color:'#1f2b33'}, beginAtZero: false }
+                }
+            }
+        });
+    }
+</script>
+</body>
+</html>
