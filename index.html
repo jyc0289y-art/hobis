@@ -13,7 +13,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
     <style>
-        /* HOBIS UI SYSTEM V3.7 (STABLE) */
+        /* HOBIS UI SYSTEM V3.8 (LOGGING ENABLED) */
         :root {
             --hobis-green: #00ff33;
             --hobis-cyan: #00f7ff;
@@ -33,7 +33,6 @@
             color: var(--hobis-green);
             font-family: 'Share Tech Mono', monospace;
             margin: 0; 
-            /* Safe Area for Notch/Home Bar */
             padding: calc(env(safe-area-inset-top) + 10px) env(safe-area-inset-right) 60px env(safe-area-inset-left);
             background-image: 
                 linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), 
@@ -42,29 +41,20 @@
             font-size: 16px;
         }
 
-        /* FLEX HEADER (Fixed Overlap Issue) */
+        /* HEADER */
         .top-bar {
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center;
-            flex-wrap: wrap; /* Important for small screens */
-            gap: 10px;
-            margin-bottom: 20px; 
-            padding-bottom: 10px;
-            border-bottom: 2px solid var(--hobis-border);
+            display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;
+            gap: 10px; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 2px solid var(--hobis-border);
         }
-
         h1 {
             font-family: 'Orbitron', sans-serif; margin: 0; font-size: 1.4rem;
             color: var(--hobis-cyan); text-shadow: 0 0 10px var(--hobis-cyan);
         }
-
         .fs-btn {
             background: transparent; border: 1px solid var(--hobis-cyan); color: var(--hobis-cyan);
             padding: 6px 10px; cursor: pointer; font-family: 'Orbitron', sans-serif; font-size: 0.75rem;
             border-radius: 4px; transition: 0.3s; white-space: nowrap;
         }
-        .fs-btn:active { background: rgba(0, 247, 255, 0.2); }
 
         .container { max-width: 800px; margin: 0 auto; width: 100%; padding: 0 10px; }
 
@@ -84,7 +74,21 @@
             flex-wrap: wrap; gap: 5px;
         }
 
-        /* GRID */
+        /* LOG PANEL STYLES (NEW) */
+        .log-container {
+            max-height: 250px; overflow-y: auto; 
+            border: 1px solid #1f2b33; background: rgba(0,0,0,0.2); padding: 5px;
+        }
+        .log-item {
+            border-bottom: 1px solid #2a3b47; padding: 8px; font-size: 0.85rem; color: #a0c0c0;
+        }
+        .log-item:last-child { border-bottom: none; }
+        .log-time { color: #5f7481; font-size: 0.75rem; display: block; margin-bottom: 2px; }
+        .log-mode { color: var(--hobis-cyan); font-weight: bold; margin-right: 5px; }
+        .log-result { color: var(--hobis-green); font-weight: bold; display: block; margin-top: 2px; }
+        .log-inputs { display: block; color: #8fa3b0; font-size: 0.8rem; margin-top: 2px; }
+
+        /* GRID & LAYOUT */
         .grid-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px; }
         @media (max-width: 600px) {
             .grid-row { grid-template-columns: 1fr; gap: 10px; }
@@ -92,7 +96,7 @@
             .header select, .header button { width: 100% !important; margin-top: 5px; }
         }
 
-        /* CONTROLS */
+        /* INPUTS */
         label { display: block; color: #8fa3b0; margin-bottom: 5px; font-size: 0.85rem; }
         input, select {
             background: var(--input-bg); border: 1px solid #3c4c56; color: var(--hobis-green);
@@ -101,7 +105,6 @@
             -webkit-appearance: none;
         }
         input:focus, select:focus { border-color: var(--hobis-cyan); box-shadow: 0 0 8px rgba(0, 247, 255, 0.2); }
-        
         .input-group { display: flex; gap: 5px; }
         .input-group input { flex: 7; border-top-right-radius: 0; border-bottom-right-radius: 0; }
         .input-group select { flex: 3; border-top-left-radius: 0; border-bottom-left-radius: 0; border-left: none; min-width: 80px; text-align:center;}
@@ -119,7 +122,7 @@
             background: rgba(0,0,0,0.3); color: #8fa3b0; cursor: pointer; font-size: 0.8rem; touch-action: manipulation;
         }
 
-        /* TABS & SWITCHERS */
+        /* TABS & MODES */
         .tabs { display: flex; gap: 8px; margin-bottom: 20px; }
         .tab-btn {
             flex: 1; background: #15191d; border: 1px solid var(--hobis-border); color: #5f7481;
@@ -138,11 +141,10 @@
             font-weight: bold; transition: 0.2s; font-size: 0.9rem; border-radius: 4px; touch-action: manipulation;
         }
         .mode-opt.active {
-            background: rgba(0, 255, 51, 0.15); color: var(--hobis-green); 
-            box-shadow: 0 0 5px rgba(0, 255, 51, 0.1);
+            background: rgba(0, 255, 51, 0.15); color: var(--hobis-green); box-shadow: 0 0 5px rgba(0, 255, 51, 0.1);
         }
 
-        /* LIST ITEMS */
+        /* DYNAMIC LISTS */
         .list-item {
             background: rgba(255, 255, 255, 0.02);
             border-left: 3px solid var(--hobis-border); padding: 10px; 
@@ -177,7 +179,7 @@
 
 <div class="container">
     <div class="top-bar">
-        <h1>HOBIS v3.7</h1>
+        <h1>HOBIS v3.8</h1>
         <button class="fs-btn" onclick="toggleFullScreen()">&#x26F6; FULL SCREEN</button>
     </div>
 
@@ -224,12 +226,22 @@
             </div>
         </div>
     </div>
+
+    <div class="panel">
+        <div class="header">
+            <span>MISSION LOG</span>
+            <button class="btn-outline" onclick="clearLog()">CLEAR LOG</button>
+        </div>
+        <div id="logContainer" class="log-container">
+            <div style="text-align:center; padding:20px; color:#555;">Ready for operation.</div>
+        </div>
+    </div>
 </div>
 
 <script src="hobis_db.js"></script>
 
 <script>
-    // --- HOBIS KERNEL V3.7 ---
+    // --- HOBIS KERNEL V3.8 ---
     let currentMainTab = 'decay';
     let currentSubMode = 'decay_forward'; 
     let currentData = [];
@@ -239,7 +251,6 @@
     const UNIT_ACT = { "Ci":1, "TBq":27.027, "GBq":0.027027, "Bq":2.7027e-11 };
     const UNIT_DOSE = { "mSv/h":1, "uSv/h":0.001, "R/h":10, "mR/h":0.01 };
     
-    // --- iOS Detection & Fullscreen ---
     function isIOS() {
         return [
             'iPad Simulator', 'iPhone Simulator', 'iPod Simulator', 'iPad', 'iPhone', 'iPod'
@@ -247,12 +258,10 @@
     }
 
     function toggleFullScreen() {
-        // iOS: Show Instruction instead of Error
         if (isIOS()) {
-            alert("iOS 시스템 정책상 버튼으로 전체화면을 실행할 수 없습니다.\n\n[공유] 버튼 -> [홈 화면에 추가]를 선택하여 앱으로 실행해주세요.");
+            alert("iOS 시스템 정책: [공유] -> [홈 화면에 추가]로 앱 모드를 실행하세요.");
             return;
         }
-        // Android/PC
         if (!document.fullscreenElement) {
             document.documentElement.requestFullscreen().catch(err => { console.log(err); });
         } else {
@@ -260,7 +269,6 @@
         }
     }
 
-    // --- INIT ---
     window.onload = function() {
         if(typeof GLOBAL_DB === 'undefined') {
             document.getElementById('sysStatus').innerText = "DB ERROR";
@@ -305,7 +313,7 @@
         document.getElementById('resultBox').style.display = 'none';
     }
 
-    // --- RENDER INPUTS (Restored Features) ---
+    // --- RENDERER ---
     function renderInputs() {
         const area = document.getElementById('inputArea');
         area.innerHTML = "";
@@ -324,7 +332,7 @@
                     <div><label>Eval</label><input type="date" id="dateEnd"></div>
                 </div>
                 <div class="grid-row">
-                    <div><label>Output Unit</label><select id="outUnit">${getUnitOpts('act')}</select></div>
+                    <div><label>Result Unit</label><select id="outUnit">${getUnitOpts('act')}</select></div>
                 </div>`;
             addSourceRow(); 
             const today = new Date().toISOString().split('T')[0];
@@ -353,7 +361,7 @@
             updateRowSpec(document.getElementById('nucSelect'));
         }
 
-        // 3. SHIELD FWD (RESTORED OUTPUT SELECTOR)
+        // 3. SHIELD FWD
         else if(currentSubMode === 'shield_forward') {
             area.innerHTML = `
                 <div style="margin-bottom:15px; border-bottom:1px dashed #3c4c56; padding-bottom:10px;">
@@ -378,8 +386,8 @@
                      <div>
                         <label>Output Type</label>
                         <select id="outType" onchange="updateOutUnit()">
-                            <option value="dose">Result Dose Rate</option>
-                            <option value="act">Effective Activity</option>
+                            <option value="dose">Dose Rate</option>
+                            <option value="act">Eff. Activity</option>
                         </select>
                     </div>
                      <div>
@@ -391,7 +399,7 @@
             addLayerRow();
         }
 
-        // 4. SHIELD REV (RESTORED TARGET SELECTOR)
+        // 4. SHIELD REV
         else if(currentSubMode === 'shield_reverse') {
             area.innerHTML = `
                 <div class="grid-row">
@@ -492,7 +500,32 @@
         return days;
     }
 
-    // --- CALC CORE ---
+    // --- CALC CORE & LOGGING ---
+    let logHistory = [];
+
+    function addToLog(modeStr, inputStr, resultStr) {
+        const now = new Date();
+        const timeStr = now.toLocaleTimeString() + ' ' + now.toLocaleDateString();
+        
+        const logItem = `
+            <div class="log-item">
+                <span class="log-time">[${timeStr}]</span>
+                <div><span class="log-mode">${modeStr}</span></div>
+                <div class="log-inputs">${inputStr}</div>
+                <div class="log-result">>> ${resultStr}</div>
+            </div>`;
+        
+        const container = document.getElementById('logContainer');
+        // Clear initial text if present
+        if(container.innerText.includes("Ready")) container.innerHTML = "";
+        
+        container.innerHTML = logItem + container.innerHTML;
+    }
+
+    function clearLog() {
+        document.getElementById('logContainer').innerHTML = '<div style="text-align:center; padding:20px; color:#555;">Log Cleared.</div>';
+    }
+
     function calculate() {
         let manualDataCache = {}; 
         function getReadyNuc(id) {
@@ -512,7 +545,8 @@
             const d2 = new Date(document.getElementById('dateEnd').value);
             const elapsedDays = (d2 - d1) / (86400000);
             
-            let totalActivityEnd = 0; let sources = [];
+            let totalActivityEnd = 0; let sources = []; let logSources = [];
+            
             document.querySelectorAll('.source-row').forEach(row => {
                 const id = row.querySelector('.src-select').value;
                 const val = parseFloat(row.querySelector('.src-val').value) || 0;
@@ -523,12 +557,18 @@
                     const hl = getHLDays(nuc);
                     totalActivityEnd += A0_Ci * Math.pow(0.5, elapsedDays/hl);
                     sources.push({ nuc:nuc, A0:A0_Ci, hl:hl });
+                    logSources.push(`${nuc.id}(${val}${unit})`);
                 }
             });
 
             const finalVal = totalActivityEnd * (1/UNIT_ACT[outUnit]);
-            showResult(`${finalVal.toExponential(4)} ${outUnit}`, `Elapsed: ${elapsedDays.toFixed(1)} days`);
+            const resStr = `${finalVal.toExponential(4)} ${outUnit}`;
+            showResult(resStr, `Elapsed: ${elapsedDays.toFixed(1)} days`);
+            
+            // LOG
+            addToLog("DECAY(FWD)", `Src: ${logSources.join(', ')} | Days: ${elapsedDays.toFixed(1)}`, resStr);
 
+            // Chart
             const labels = []; const data = []; let steps = 100;
             let range = elapsedDays > 0 ? elapsedDays*1.2 : 365;
             for(let i=0; i<=steps; i++) {
@@ -552,8 +592,13 @@
             if(ratio >= 1) { alert("Target >= Initial"); return; }
             const days = hl * (Math.log(ratio)/Math.log(0.5));
             const dTarget = new Date(new Date(document.getElementById('dateStart').value).getTime() + (days * 86400000));
-            showResult(`${days.toFixed(1)} Days`, `Reach: ${dTarget.toISOString().split('T')[0]}`);
             
+            const resStr = `${days.toFixed(1)} Days`;
+            showResult(resStr, `Reach: ${dTarget.toISOString().split('T')[0]}`);
+            
+            // LOG
+            addToLog("DECAY(REV)", `${nuc.id} | Start: ${A0} -> Target: ${At}`, resStr);
+
             const labels=[]; const data=[]; let steps=100;
             for(let i=0; i<=steps; i++) {
                 let t = i*(days*1.2/steps); labels.push(t.toFixed(1)); data.push(A0 * Math.pow(0.5, t/hl));
@@ -567,23 +612,27 @@
             const distFactor = 1/(dist*dist);
             const outType = document.getElementById('outType').value;
             const outUnit = document.getElementById('outUnit').value;
-            let sources = []; let layers = [];
+            let sources = []; let layers = []; let logSrc=[]; let logLay=[];
 
             document.querySelectorAll('.source-row').forEach(row => {
                 const id = row.querySelector('.src-select').value;
                 const val = parseFloat(row.querySelector('.src-val').value)||0;
                 const unit = row.querySelector('.src-unit').value;
                 const nuc = getReadyNuc(id);
-                if(nuc && val > 0) sources.push({ nuc:nuc, A0: val * UNIT_ACT[unit] });
+                if(nuc && val > 0) {
+                    sources.push({ nuc:nuc, A0: val * UNIT_ACT[unit] });
+                    logSrc.push(`${nuc.id}(${val}${unit})`);
+                }
             });
 
             document.querySelectorAll('.shield-layer').forEach(l => {
-                layers.push({ mat: l.querySelector('.mat-select').value, thk: parseFloat(l.querySelector('.thk-input').value)||0 });
+                const m = l.querySelector('.mat-select').value;
+                const t = parseFloat(l.querySelector('.thk-input').value)||0;
+                layers.push({ mat: m, thk: t });
+                logLay.push(`${m} ${t}mm`);
             });
 
-            let finalVal = 0; let baseVal = 0;
-            
-            // Calc Loop
+            let finalVal = 0; 
             sources.forEach(src => {
                 let trans = 1.0;
                 layers.forEach(l => {
@@ -591,24 +640,19 @@
                     if(hvl > 0 && l.thk > 0) trans *= Math.pow(0.5, l.thk/hvl);
                 });
                 
-                if (outType === 'dose') {
-                    // Gamma * Ci * 1/r^2 * Trans
-                    finalVal += src.nuc.gamma * src.A0 * distFactor * trans;
-                } else {
-                    // Ci * Trans
-                    finalVal += src.A0 * trans;
-                }
+                if (outType === 'dose') finalVal += src.nuc.gamma * src.A0 * distFactor * trans;
+                else finalVal += src.A0 * trans;
             });
 
-            if(outType === 'dose') {
-                finalVal *= (1/UNIT_DOSE[outUnit]);
-                showResult(`${finalVal.toExponential(4)} ${outUnit}`, `Dose @ ${dist}m`);
-            } else {
-                finalVal *= (1/UNIT_ACT[outUnit]);
-                showResult(`${finalVal.toExponential(4)} ${outUnit}`, `Effective Activity`);
-            }
+            if(outType === 'dose') finalVal *= (1/UNIT_DOSE[outUnit]);
+            else finalVal *= (1/UNIT_ACT[outUnit]);
 
-            // Graphing Primary Layer
+            const resStr = `${finalVal.toExponential(4)} ${outUnit}`;
+            showResult(resStr, outType==='dose' ? `Dose @ ${dist}m` : `Eff. Activity`);
+
+            // LOG
+            addToLog("SHIELD(FWD)", `Src: ${logSrc.join(',')} | Dist: ${dist}m | Layers: ${logLay.join('+')}`, resStr);
+
             if(layers.length > 0) {
                 const primMat = layers[0].mat; const primThk = layers[0].thk;
                 const labels=[]; const data=[]; let steps=100; let maxThk = primThk*2 || 50;
@@ -638,40 +682,26 @@
             const id = document.getElementById('nucSelect').value;
             const inVal = parseFloat(document.getElementById('inVal').value);
             const inUnit = document.getElementById('inUnit').value;
-            
             const targetType = document.getElementById('targetType').value;
             const targetVal = parseFloat(document.getElementById('targetVal').value);
             const targetUnit = document.getElementById('targetUnit').value;
-            
             const dist = parseFloat(document.getElementById('inDist').value)||1;
             const mat = document.getElementById('targetMat').value;
             const nuc = getReadyNuc(id);
             if(!nuc || !inVal || !targetVal) return;
 
-            // Strategy: Calculate Required Transmission Ratio
-            let startBase = 0; let targetBase = 0; let startBaseForGraph = 0;
-
+            let reqTrans = 1.0; let startBaseForGraph = 0;
             if (targetType === 'dose') {
-                // Work in mSv/h
-                let doseAtDist = 0;
-                let ci = inVal * UNIT_ACT[inUnit]; // Input is activity
-                doseAtDist = nuc.gamma * ci * (1/(dist*dist));
-                
-                startBase = doseAtDist; 
-                targetBase = targetVal * UNIT_DOSE[targetUnit];
-                
-                // For graph y-axis scaling (display in Target Unit)
-                startBaseForGraph = startBase * (1/UNIT_DOSE[targetUnit]);
-
+                let ci = inVal * UNIT_ACT[inUnit]; // Input Act
+                let doseAtDist = nuc.gamma * ci * (1/(dist*dist));
+                reqTrans = (targetVal * UNIT_DOSE[targetUnit]) / doseAtDist;
+                startBaseForGraph = doseAtDist * (1/UNIT_DOSE[targetUnit]);
             } else {
-                // Work in Ci (Activity)
-                startBase = inVal * UNIT_ACT[inUnit];
-                targetBase = targetVal * UNIT_ACT[targetUnit];
-                
-                startBaseForGraph = startBase * (1/UNIT_ACT[targetUnit]);
+                let startAct = inVal * UNIT_ACT[inUnit];
+                reqTrans = (targetVal * UNIT_ACT[targetUnit]) / startAct;
+                startBaseForGraph = startAct * (1/UNIT_ACT[targetUnit]);
             }
 
-            const reqTrans = targetBase / startBase;
             if(reqTrans >= 1) { showResult("0 mm", "No Shield Needed"); return; }
             
             let hvl = (nuc.hvl && nuc.hvl[mat]) ? nuc.hvl[mat] : 0;
@@ -679,15 +709,19 @@
             if(!hvl) { alert("No HVL data"); return; }
             
             const thk = hvl * (Math.log(reqTrans)/Math.log(0.5));
-            showResult(`${thk.toFixed(2)} mm`, `${mat} (HVL: ${hvl}mm)`);
+            const resStr = `${thk.toFixed(2)} mm`;
+            showResult(resStr, `${mat} (HVL: ${hvl}mm)`);
             
+            // LOG
+            addToLog("SHIELD(REV)", `${nuc.id}(${inVal}${inUnit}) | Target: ${targetVal}${targetUnit} | Dist: ${dist}m`, resStr);
+
             const labels=[]; const data=[]; let steps=100; let maxThk = thk*1.5;
             for(let i=0; i<=steps; i++) {
                 let x = i*(maxThk/steps);
                 let val = startBaseForGraph * Math.pow(0.5, x/hvl);
                 data.push(val); labels.push(x.toFixed(1));
             }
-            drawChart(labels, data, `${targetType.toUpperCase()} vs ${mat}`, 'mm', thk, targetVal);
+            drawChart(labels, data, `Attenuation vs ${mat}`, 'mm', thk, targetVal);
         }
     }
 
