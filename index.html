@@ -13,7 +13,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
     <style>
-        /* HOBIS UI SYSTEM V3.8 (LOGGING ENABLED) */
+        /* HOBIS UI SYSTEM V3.9 (DATA EXPORT CAPABLE) */
         :root {
             --hobis-green: #00ff33;
             --hobis-cyan: #00f7ff;
@@ -74,18 +74,19 @@
             flex-wrap: wrap; gap: 5px;
         }
 
-        /* LOG PANEL STYLES (NEW) */
+        /* LOG PANEL */
         .log-container {
             max-height: 250px; overflow-y: auto; 
             border: 1px solid #1f2b33; background: rgba(0,0,0,0.2); padding: 5px;
         }
         .log-item {
-            border-bottom: 1px solid #2a3b47; padding: 8px; font-size: 0.85rem; color: #a0c0c0;
+            border-bottom: 1px solid #2a3b47; padding: 10px; font-size: 0.85rem; color: #a0c0c0;
         }
         .log-item:last-child { border-bottom: none; }
         .log-time { color: #5f7481; font-size: 0.75rem; display: block; margin-bottom: 2px; }
         .log-mode { color: var(--hobis-cyan); font-weight: bold; margin-right: 5px; }
-        .log-result { color: var(--hobis-green); font-weight: bold; display: block; margin-top: 2px; }
+        .log-date-range { color: var(--hobis-warn); font-size: 0.8rem; display:block; margin-top:2px; }
+        .log-result { color: var(--hobis-green); font-weight: bold; display: block; margin-top: 4px; }
         .log-inputs { display: block; color: #8fa3b0; font-size: 0.8rem; margin-top: 2px; }
 
         /* GRID & LAYOUT */
@@ -122,7 +123,7 @@
             background: rgba(0,0,0,0.3); color: #8fa3b0; cursor: pointer; font-size: 0.8rem; touch-action: manipulation;
         }
 
-        /* TABS & MODES */
+        /* TABS */
         .tabs { display: flex; gap: 8px; margin-bottom: 20px; }
         .tab-btn {
             flex: 1; background: #15191d; border: 1px solid var(--hobis-border); color: #5f7481;
@@ -179,7 +180,7 @@
 
 <div class="container">
     <div class="top-bar">
-        <h1>HOBIS v3.8</h1>
+        <h1>HOBIS v3.9</h1>
         <button class="fs-btn" onclick="toggleFullScreen()">&#x26F6; FULL SCREEN</button>
     </div>
 
@@ -230,7 +231,10 @@
     <div class="panel">
         <div class="header">
             <span>MISSION LOG</span>
-            <button class="btn-outline" onclick="clearLog()">CLEAR LOG</button>
+            <div style="display:flex; gap:5px;">
+                <button class="btn-outline" onclick="downloadCSV()">CSV EXPORT</button>
+                <button class="btn-outline" style="color:var(--hobis-alert); border-color:var(--hobis-alert);" onclick="clearLog()">CLEAR</button>
+            </div>
         </div>
         <div id="logContainer" class="log-container">
             <div style="text-align:center; padding:20px; color:#555;">Ready for operation.</div>
@@ -241,12 +245,13 @@
 <script src="hobis_db.js"></script>
 
 <script>
-    // --- HOBIS KERNEL V3.8 ---
+    // --- HOBIS KERNEL V3.9 ---
     let currentMainTab = 'decay';
     let currentSubMode = 'decay_forward'; 
     let currentData = [];
     let myChart = null;
     let nucOptionsHTML = ""; 
+    let logHistory = []; // Data storage for CSV
 
     const UNIT_ACT = { "Ci":1, "TBq":27.027, "GBq":0.027027, "Bq":2.7027e-11 };
     const UNIT_DOSE = { "mSv/h":1, "uSv/h":0.001, "R/h":10, "mR/h":0.01 };
@@ -288,6 +293,65 @@
         currentData.forEach(n => { nucOptionsHTML += `<option value="${n.id}">${n.id}</option>`; });
     }
 
+    // --- LOGGING & EXPORT SYSTEM ---
+    function addToLog(modeStr, inputStr, resultStr, dateInfoStr) {
+        const now = new Date();
+        const timeStr = now.toLocaleDateString() + ' ' + now.toLocaleTimeString();
+        
+        // Save to Object for CSV
+        logHistory.push({
+            timestamp: timeStr,
+            mode: modeStr,
+            inputs: inputStr,
+            dates: dateInfoStr || "N/A",
+            result: resultStr
+        });
+
+        // UI Update
+        const logItem = `
+            <div class="log-item">
+                <span class="log-time">[${timeStr}]</span>
+                <div><span class="log-mode">${modeStr}</span></div>
+                <div class="log-inputs">${inputStr}</div>
+                ${dateInfoStr ? `<div class="log-date-range">📅 ${dateInfoStr}</div>` : ''}
+                <div class="log-result">>> ${resultStr}</div>
+            </div>`;
+        
+        const container = document.getElementById('logContainer');
+        if(container.innerText.includes("Ready")) container.innerHTML = "";
+        container.innerHTML = logItem + container.innerHTML;
+    }
+
+    function clearLog() {
+        logHistory = [];
+        document.getElementById('logContainer').innerHTML = '<div style="text-align:center; padding:20px; color:#555;">Log Cleared.</div>';
+    }
+
+    function downloadCSV() {
+        if(logHistory.length === 0) { alert("No logs to export."); return; }
+        
+        let csvContent = "Timestamp,Mode,Inputs,Date Range,Result\n";
+        
+        logHistory.forEach(row => {
+            // Escape commas in text
+            const inputs = `"${row.inputs.replace(/"/g, '""')}"`;
+            const result = `"${row.result.replace(/"/g, '""')}"`;
+            const dates = `"${row.dates.replace(/"/g, '""')}"`;
+            csvContent += `${row.timestamp},${row.mode},${inputs},${dates},${result}\n`;
+        });
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement("a");
+        const url = URL.createObjectURL(blob);
+        link.setAttribute("href", url);
+        link.setAttribute("download", `HOBIS_LOG_${new Date().toISOString().slice(0,10)}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    // --- MAIN LOGIC ---
     function setMainTab(tab) {
         currentMainTab = tab;
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -318,7 +382,6 @@
         const area = document.getElementById('inputArea');
         area.innerHTML = "";
         
-        // 1. DECAY FWD
         if(currentSubMode === 'decay_forward') {
             area.innerHTML = `
                 <div style="margin-bottom:15px; border-bottom:1px dashed #3c4c56; padding-bottom:10px;">
@@ -340,7 +403,6 @@
             document.getElementById('dateEnd').value = today;
         }
 
-        // 2. DECAY REV
         else if(currentSubMode === 'decay_reverse') {
             area.innerHTML = `
                 <div class="grid-row">
@@ -361,7 +423,6 @@
             updateRowSpec(document.getElementById('nucSelect'));
         }
 
-        // 3. SHIELD FWD
         else if(currentSubMode === 'shield_forward') {
             area.innerHTML = `
                 <div style="margin-bottom:15px; border-bottom:1px dashed #3c4c56; padding-bottom:10px;">
@@ -370,18 +431,15 @@
                     </div>
                     <div id="sourceList"></div>
                 </div>
-                
                 <div class="grid-row">
                      <div><label>Distance (m)</label><input type="number" id="inDist" value="1"></div>
                 </div>
-
                 <div style="margin:20px 0; border-top:1px dashed #3c4c56; padding-top:15px;">
                     <div class="header" style="border:none; margin:0;">
                         <span>LAYERS</span> <button class="btn-outline" onclick="addLayerRow()">+ ADD</button>
                     </div>
                     <div id="layerList"></div>
                 </div>
-
                 <div class="grid-row">
                      <div>
                         <label>Output Type</label>
@@ -390,16 +448,11 @@
                             <option value="act">Eff. Activity</option>
                         </select>
                     </div>
-                     <div>
-                        <label>Output Unit</label>
-                        <select id="outUnit">${getUnitOpts('dose')}</select>
-                    </div>
+                     <div><label>Output Unit</label><select id="outUnit">${getUnitOpts('dose')}</select></div>
                 </div>`;
-            addSourceRow();
-            addLayerRow();
+            addSourceRow(); addLayerRow();
         }
 
-        // 4. SHIELD REV
         else if(currentSubMode === 'shield_reverse') {
             area.innerHTML = `
                 <div class="grid-row">
@@ -409,9 +462,7 @@
                         <div class="input-group"><input type="number" id="inVal" placeholder="Val"><select id="inUnit">${getUnitOpts('act')}</select></div>
                     </div>
                 </div>
-                
                 <div style="border-top:1px dashed #3c4c56; margin:15px 0 10px 0;"></div>
-
                 <div class="grid-row">
                     <div>
                         <label>Target Mode</label>
@@ -422,13 +473,9 @@
                     </div>
                     <div>
                         <label>Target Value</label>
-                        <div class="input-group">
-                            <input type="number" id="targetVal" placeholder="Target">
-                            <select id="targetUnit">${getUnitOpts('dose')}</select>
-                        </div>
+                        <div class="input-group"><input type="number" id="targetVal" placeholder="Target"><select id="targetUnit">${getUnitOpts('dose')}</select></div>
                     </div>
                 </div>
-
                 <div class="grid-row">
                     <div><label>Distance (m)</label><input type="number" id="inDist" value="1"></div>
                     <div>
@@ -500,32 +547,7 @@
         return days;
     }
 
-    // --- CALC CORE & LOGGING ---
-    let logHistory = [];
-
-    function addToLog(modeStr, inputStr, resultStr) {
-        const now = new Date();
-        const timeStr = now.toLocaleTimeString() + ' ' + now.toLocaleDateString();
-        
-        const logItem = `
-            <div class="log-item">
-                <span class="log-time">[${timeStr}]</span>
-                <div><span class="log-mode">${modeStr}</span></div>
-                <div class="log-inputs">${inputStr}</div>
-                <div class="log-result">>> ${resultStr}</div>
-            </div>`;
-        
-        const container = document.getElementById('logContainer');
-        // Clear initial text if present
-        if(container.innerText.includes("Ready")) container.innerHTML = "";
-        
-        container.innerHTML = logItem + container.innerHTML;
-    }
-
-    function clearLog() {
-        document.getElementById('logContainer').innerHTML = '<div style="text-align:center; padding:20px; color:#555;">Log Cleared.</div>';
-    }
-
+    // --- CALC CORE ---
     function calculate() {
         let manualDataCache = {}; 
         function getReadyNuc(id) {
@@ -546,7 +568,6 @@
             const elapsedDays = (d2 - d1) / (86400000);
             
             let totalActivityEnd = 0; let sources = []; let logSources = [];
-            
             document.querySelectorAll('.source-row').forEach(row => {
                 const id = row.querySelector('.src-select').value;
                 const val = parseFloat(row.querySelector('.src-val').value) || 0;
@@ -565,10 +586,11 @@
             const resStr = `${finalVal.toExponential(4)} ${outUnit}`;
             showResult(resStr, `Elapsed: ${elapsedDays.toFixed(1)} days`);
             
-            // LOG
-            addToLog("DECAY(FWD)", `Src: ${logSources.join(', ')} | Days: ${elapsedDays.toFixed(1)}`, resStr);
+            // LOGGING
+            const dateStr = `${d1.toISOString().split('T')[0]} → ${d2.toISOString().split('T')[0]} (${elapsedDays.toFixed(1)}d)`;
+            addToLog("DECAY(FWD)", `Src: ${logSources.join(',')}`, resStr, dateStr);
 
-            // Chart
+            // CHART
             const labels = []; const data = []; let steps = 100;
             let range = elapsedDays > 0 ? elapsedDays*1.2 : 365;
             for(let i=0; i<=steps; i++) {
@@ -591,13 +613,16 @@
             const ratio = At/A0;
             if(ratio >= 1) { alert("Target >= Initial"); return; }
             const days = hl * (Math.log(ratio)/Math.log(0.5));
-            const dTarget = new Date(new Date(document.getElementById('dateStart').value).getTime() + (days * 86400000));
+            const d1 = new Date(document.getElementById('dateStart').value);
+            const dTarget = new Date(d1.getTime() + (days * 86400000));
             
             const resStr = `${days.toFixed(1)} Days`;
-            showResult(resStr, `Reach: ${dTarget.toISOString().split('T')[0]}`);
+            const dateRes = dTarget.toISOString().split('T')[0];
+            showResult(resStr, `Reach: ${dateRes}`);
             
-            // LOG
-            addToLog("DECAY(REV)", `${nuc.id} | Start: ${A0} -> Target: ${At}`, resStr);
+            // LOGGING
+            const dateStr = `${d1.toISOString().split('T')[0]} → ${dateRes} (${days.toFixed(1)}d)`;
+            addToLog("DECAY(REV)", `${nuc.id} | Start:${A0} -> Target:${At}`, resStr, dateStr);
 
             const labels=[]; const data=[]; let steps=100;
             for(let i=0; i<=steps; i++) {
@@ -639,7 +664,6 @@
                     let hvl = (src.nuc.hvl && src.nuc.hvl[l.mat]) ? src.nuc.hvl[l.mat] : (l.mat==='Lead'?src.nuc.hvl['Lead']:0);
                     if(hvl > 0 && l.thk > 0) trans *= Math.pow(0.5, l.thk/hvl);
                 });
-                
                 if (outType === 'dose') finalVal += src.nuc.gamma * src.A0 * distFactor * trans;
                 else finalVal += src.A0 * trans;
             });
@@ -649,9 +673,9 @@
 
             const resStr = `${finalVal.toExponential(4)} ${outUnit}`;
             showResult(resStr, outType==='dose' ? `Dose @ ${dist}m` : `Eff. Activity`);
-
+            
             // LOG
-            addToLog("SHIELD(FWD)", `Src: ${logSrc.join(',')} | Dist: ${dist}m | Layers: ${logLay.join('+')}`, resStr);
+            addToLog("SHIELD(FWD)", `Src:${logSrc.join('|')} / Lay:${logLay.join('|')} / ${dist}m`, resStr, "N/A");
 
             if(layers.length > 0) {
                 const primMat = layers[0].mat; const primThk = layers[0].thk;
@@ -713,7 +737,7 @@
             showResult(resStr, `${mat} (HVL: ${hvl}mm)`);
             
             // LOG
-            addToLog("SHIELD(REV)", `${nuc.id}(${inVal}${inUnit}) | Target: ${targetVal}${targetUnit} | Dist: ${dist}m`, resStr);
+            addToLog("SHIELD(REV)", `${nuc.id}(${inVal}${inUnit}) > Target ${targetVal}${targetUnit}`, resStr, "N/A");
 
             const labels=[]; const data=[]; let steps=100; let maxThk = thk*1.5;
             for(let i=0; i<=steps; i++) {
