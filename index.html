@@ -13,7 +13,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
     <style>
-        /* HOBIS UI SYSTEM V3.9 (DATA EXPORT CAPABLE) */
+        /* HOBIS UI SYSTEM V4.0 (DATA SCIENCE READY) */
         :root {
             --hobis-green: #00ff33;
             --hobis-cyan: #00f7ff;
@@ -180,7 +180,7 @@
 
 <div class="container">
     <div class="top-bar">
-        <h1>HOBIS v3.9</h1>
+        <h1>HOBIS v4.0</h1>
         <button class="fs-btn" onclick="toggleFullScreen()">&#x26F6; FULL SCREEN</button>
     </div>
 
@@ -245,13 +245,13 @@
 <script src="hobis_db.js"></script>
 
 <script>
-    // --- HOBIS KERNEL V3.9 ---
+    // --- HOBIS KERNEL V4.0 ---
     let currentMainTab = 'decay';
     let currentSubMode = 'decay_forward'; 
     let currentData = [];
     let myChart = null;
     let nucOptionsHTML = ""; 
-    let logHistory = []; // Data storage for CSV
+    let logHistory = []; // Structured Log Data
 
     const UNIT_ACT = { "Ci":1, "TBq":27.027, "GBq":0.027027, "Bq":2.7027e-11 };
     const UNIT_DOSE = { "mSv/h":1, "uSv/h":0.001, "R/h":10, "mR/h":0.01 };
@@ -264,7 +264,7 @@
 
     function toggleFullScreen() {
         if (isIOS()) {
-            alert("iOS 시스템 정책: [공유] -> [홈 화면에 추가]로 앱 모드를 실행하세요.");
+            alert("iOS 정책: [공유] 버튼 -> [홈 화면에 추가]를 사용하세요.");
             return;
         }
         if (!document.fullscreenElement) {
@@ -293,28 +293,45 @@
         currentData.forEach(n => { nucOptionsHTML += `<option value="${n.id}">${n.id}</option>`; });
     }
 
-    // --- LOGGING & EXPORT SYSTEM ---
-    function addToLog(modeStr, inputStr, resultStr, dateInfoStr) {
+    // --- STRUCTURAL LOGGING & CSV EXPORT ---
+    function addToLog(params) {
+        // params: { mode, nucList, inputVal, inputUnit, resultVal, resultUnit, startStr, endStr, days, dist, shieldInfo }
         const now = new Date();
         const timeStr = now.toLocaleDateString() + ' ' + now.toLocaleTimeString();
         
-        // Save to Object for CSV
+        // Save structured data
         logHistory.push({
             timestamp: timeStr,
-            mode: modeStr,
-            inputs: inputStr,
-            dates: dateInfoStr || "N/A",
-            result: resultStr
+            mode: params.mode,
+            nuclides: params.nucList || "-",
+            inputVal: params.inputVal || "",
+            inputUnit: params.inputUnit || "",
+            resultVal: params.resultVal || "",
+            resultUnit: params.resultUnit || "",
+            startDate: params.startStr || "",
+            endDate: params.endStr || "",
+            days: params.days || "",
+            distance: params.dist || "",
+            shieldInfo: params.shieldInfo || ""
         });
 
-        // UI Update
+        // UI Display (Summarized)
+        let summaryInputs = `Src: ${params.nucList}`;
+        if(params.inputVal) summaryInputs += ` (${params.inputVal} ${params.inputUnit})`;
+        if(params.dist) summaryInputs += ` @ ${params.dist}m`;
+        if(params.shieldInfo) summaryInputs += ` | ${params.shieldInfo}`;
+
+        let dateDisp = "";
+        if(params.startStr && params.endStr) dateDisp = `<div class="log-date-range">📅 ${params.startStr} -> ${params.endStr} (${params.days}d)</div>`;
+        else if(params.endStr) dateDisp = `<div class="log-date-range">📅 Target: ${params.endStr}</div>`;
+
         const logItem = `
             <div class="log-item">
                 <span class="log-time">[${timeStr}]</span>
-                <div><span class="log-mode">${modeStr}</span></div>
-                <div class="log-inputs">${inputStr}</div>
-                ${dateInfoStr ? `<div class="log-date-range">📅 ${dateInfoStr}</div>` : ''}
-                <div class="log-result">>> ${resultStr}</div>
+                <div><span class="log-mode">${params.mode}</span></div>
+                <div class="log-inputs">${summaryInputs}</div>
+                ${dateDisp}
+                <div class="log-result">>> ${params.resultVal} ${params.resultUnit}</div>
             </div>`;
         
         const container = document.getElementById('logContainer');
@@ -330,14 +347,27 @@
     function downloadCSV() {
         if(logHistory.length === 0) { alert("No logs to export."); return; }
         
-        let csvContent = "Timestamp,Mode,Inputs,Date Range,Result\n";
+        // BOM for Excel UTF-8
+        let csvContent = "\uFEFFTimestamp,Mode,Nuclides,Input_Val,Input_Unit,Result_Val,Result_Unit,Start_Date,End_Date,Duration_Days,Distance_m,Shield_Info\n";
         
         logHistory.forEach(row => {
-            // Escape commas in text
-            const inputs = `"${row.inputs.replace(/"/g, '""')}"`;
-            const result = `"${row.result.replace(/"/g, '""')}"`;
-            const dates = `"${row.dates.replace(/"/g, '""')}"`;
-            csvContent += `${row.timestamp},${row.mode},${inputs},${dates},${result}\n`;
+            // Helper to escape commas
+            const esc = (txt) => `"${String(txt).replace(/"/g, '""')}"`;
+            
+            csvContent += [
+                esc(row.timestamp),
+                esc(row.mode),
+                esc(row.nuclides),
+                row.inputVal,
+                esc(row.inputUnit),
+                row.resultVal,
+                esc(row.resultUnit),
+                esc(row.startDate),
+                esc(row.endDate),
+                row.days,
+                row.distance,
+                esc(row.shieldInfo)
+            ].join(",") + "\n";
         });
 
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -345,7 +375,6 @@
         const url = URL.createObjectURL(blob);
         link.setAttribute("href", url);
         link.setAttribute("download", `HOBIS_LOG_${new Date().toISOString().slice(0,10)}.csv`);
-        link.style.visibility = 'hidden';
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -547,7 +576,7 @@
         return days;
     }
 
-    // --- CALC CORE ---
+    // --- CALC CORE & LOG PARAM BUILDING ---
     function calculate() {
         let manualDataCache = {}; 
         function getReadyNuc(id) {
@@ -563,11 +592,14 @@
         // 1. DECAY FWD
         if(currentSubMode === 'decay_forward') {
             const outUnit = document.getElementById('outUnit').value;
-            const d1 = new Date(document.getElementById('dateStart').value);
-            const d2 = new Date(document.getElementById('dateEnd').value);
+            const d1Str = document.getElementById('dateStart').value;
+            const d2Str = document.getElementById('dateEnd').value;
+            const d1 = new Date(d1Str);
+            const d2 = new Date(d2Str);
             const elapsedDays = (d2 - d1) / (86400000);
             
-            let totalActivityEnd = 0; let sources = []; let logSources = [];
+            let totalActivityEnd = 0; let sources = []; let logNucs = [];
+            
             document.querySelectorAll('.source-row').forEach(row => {
                 const id = row.querySelector('.src-select').value;
                 const val = parseFloat(row.querySelector('.src-val').value) || 0;
@@ -578,17 +610,23 @@
                     const hl = getHLDays(nuc);
                     totalActivityEnd += A0_Ci * Math.pow(0.5, elapsedDays/hl);
                     sources.push({ nuc:nuc, A0:A0_Ci, hl:hl });
-                    logSources.push(`${nuc.id}(${val}${unit})`);
+                    logNucs.push(`${nuc.id}(${val}${unit})`);
                 }
             });
 
             const finalVal = totalActivityEnd * (1/UNIT_ACT[outUnit]);
-            const resStr = `${finalVal.toExponential(4)} ${outUnit}`;
-            showResult(resStr, `Elapsed: ${elapsedDays.toFixed(1)} days`);
+            const resStr = `${finalVal.toExponential(4)}`;
+            showResult(resStr + ` ${outUnit}`, `Elapsed: ${elapsedDays.toFixed(1)} days`);
             
-            // LOGGING
-            const dateStr = `${d1.toISOString().split('T')[0]} → ${d2.toISOString().split('T')[0]} (${elapsedDays.toFixed(1)}d)`;
-            addToLog("DECAY(FWD)", `Src: ${logSources.join(',')}`, resStr, dateStr);
+            addToLog({
+                mode: "DECAY_FWD",
+                nucList: logNucs.join(", "),
+                startStr: d1Str,
+                endStr: d2Str,
+                days: elapsedDays.toFixed(1),
+                resultVal: finalVal.toExponential(4),
+                resultUnit: outUnit
+            });
 
             // CHART
             const labels = []; const data = []; let steps = 100;
@@ -605,7 +643,9 @@
         else if(currentSubMode === 'decay_reverse') {
             const id = document.getElementById('nucSelect').value;
             const A0 = parseFloat(document.getElementById('inA0').value);
+            const inUnit = document.getElementById('unitA0').value;
             const At = parseFloat(document.getElementById('inTargetAct').value);
+            const d1Str = document.getElementById('dateStart').value;
             const nuc = getReadyNuc(id);
             if(!nuc || !A0 || !At) return;
             
@@ -613,16 +653,22 @@
             const ratio = At/A0;
             if(ratio >= 1) { alert("Target >= Initial"); return; }
             const days = hl * (Math.log(ratio)/Math.log(0.5));
-            const d1 = new Date(document.getElementById('dateStart').value);
-            const dTarget = new Date(d1.getTime() + (days * 86400000));
+            const dTarget = new Date(new Date(d1Str).getTime() + (days * 86400000));
+            const dTargetStr = dTarget.toISOString().split('T')[0];
             
-            const resStr = `${days.toFixed(1)} Days`;
-            const dateRes = dTarget.toISOString().split('T')[0];
-            showResult(resStr, `Reach: ${dateRes}`);
+            showResult(`${days.toFixed(1)} Days`, `Reach: ${dTargetStr}`);
             
-            // LOGGING
-            const dateStr = `${d1.toISOString().split('T')[0]} → ${dateRes} (${days.toFixed(1)}d)`;
-            addToLog("DECAY(REV)", `${nuc.id} | Start:${A0} -> Target:${At}`, resStr, dateStr);
+            addToLog({
+                mode: "DECAY_REV",
+                nucList: nuc.id,
+                inputVal: A0,
+                inputUnit: inUnit,
+                resultVal: At,
+                resultUnit: inUnit + " (Target)",
+                startStr: d1Str,
+                endStr: dTargetStr,
+                days: days.toFixed(1)
+            });
 
             const labels=[]; const data=[]; let steps=100;
             for(let i=0; i<=steps; i++) {
@@ -637,7 +683,7 @@
             const distFactor = 1/(dist*dist);
             const outType = document.getElementById('outType').value;
             const outUnit = document.getElementById('outUnit').value;
-            let sources = []; let layers = []; let logSrc=[]; let logLay=[];
+            let sources = []; let layers = []; let logNucs=[]; let logLay=[];
 
             document.querySelectorAll('.source-row').forEach(row => {
                 const id = row.querySelector('.src-select').value;
@@ -646,7 +692,7 @@
                 const nuc = getReadyNuc(id);
                 if(nuc && val > 0) {
                     sources.push({ nuc:nuc, A0: val * UNIT_ACT[unit] });
-                    logSrc.push(`${nuc.id}(${val}${unit})`);
+                    logNucs.push(`${nuc.id}(${val}${unit})`);
                 }
             });
 
@@ -654,7 +700,7 @@
                 const m = l.querySelector('.mat-select').value;
                 const t = parseFloat(l.querySelector('.thk-input').value)||0;
                 layers.push({ mat: m, thk: t });
-                logLay.push(`${m} ${t}mm`);
+                logLay.push(`${m}:${t}mm`);
             });
 
             let finalVal = 0; 
@@ -664,6 +710,7 @@
                     let hvl = (src.nuc.hvl && src.nuc.hvl[l.mat]) ? src.nuc.hvl[l.mat] : (l.mat==='Lead'?src.nuc.hvl['Lead']:0);
                     if(hvl > 0 && l.thk > 0) trans *= Math.pow(0.5, l.thk/hvl);
                 });
+                
                 if (outType === 'dose') finalVal += src.nuc.gamma * src.A0 * distFactor * trans;
                 else finalVal += src.A0 * trans;
             });
@@ -671,11 +718,16 @@
             if(outType === 'dose') finalVal *= (1/UNIT_DOSE[outUnit]);
             else finalVal *= (1/UNIT_ACT[outUnit]);
 
-            const resStr = `${finalVal.toExponential(4)} ${outUnit}`;
-            showResult(resStr, outType==='dose' ? `Dose @ ${dist}m` : `Eff. Activity`);
+            showResult(`${finalVal.toExponential(4)} ${outUnit}`, outType==='dose' ? `Dose @ ${dist}m` : `Eff. Activity`);
             
-            // LOG
-            addToLog("SHIELD(FWD)", `Src:${logSrc.join('|')} / Lay:${logLay.join('|')} / ${dist}m`, resStr, "N/A");
+            addToLog({
+                mode: "SHIELD_FWD",
+                nucList: logNucs.join(", "),
+                dist: dist,
+                shieldInfo: logLay.join(" + "),
+                resultVal: finalVal.toExponential(4),
+                resultUnit: outUnit
+            });
 
             if(layers.length > 0) {
                 const primMat = layers[0].mat; const primThk = layers[0].thk;
@@ -733,11 +785,19 @@
             if(!hvl) { alert("No HVL data"); return; }
             
             const thk = hvl * (Math.log(reqTrans)/Math.log(0.5));
-            const resStr = `${thk.toFixed(2)} mm`;
-            showResult(resStr, `${mat} (HVL: ${hvl}mm)`);
             
-            // LOG
-            addToLog("SHIELD(REV)", `${nuc.id}(${inVal}${inUnit}) > Target ${targetVal}${targetUnit}`, resStr, "N/A");
+            showResult(`${thk.toFixed(2)} mm`, `${mat} (HVL: ${hvl}mm)`);
+            
+            addToLog({
+                mode: "SHIELD_REV",
+                nucList: nuc.id,
+                inputVal: inVal,
+                inputUnit: inUnit,
+                resultVal: thk.toFixed(2),
+                resultUnit: `mm (${mat})`,
+                dist: dist,
+                shieldInfo: `Target: ${targetVal}${targetUnit}`
+            });
 
             const labels=[]; const data=[]; let steps=100; let maxThk = thk*1.5;
             for(let i=0; i<=steps; i++) {
