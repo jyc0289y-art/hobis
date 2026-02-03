@@ -16,7 +16,7 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     
     <style>
-        /* HOBIS UI SYSTEM V4.15 (STABLE ENGINE) */
+        /* HOBIS UI SYSTEM V4.15 PATCH 1 (REPORT ENHANCED) */
         :root {
             --hobis-green: #00ff33;
             --hobis-cyan: #00f7ff;
@@ -44,7 +44,7 @@
             min-height: 100vh;
         }
 
-        /* --- HEADER --- */
+        /* HEADER */
         .top-bar {
             display: flex; justify-content: space-between; align-items: center; 
             margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid var(--hobis-border);
@@ -60,7 +60,7 @@
 
         .container { max-width: 1400px; margin: 0 auto; width: 100%; padding: 0 15px; display: flex; flex-direction: column; }
         
-        /* --- LAYOUT --- */
+        /* LAYOUT */
         .workspace { display: flex; flex-direction: column; gap: 20px; flex: 1; }
         @media (min-width: 1024px) { 
             .workspace { flex-direction: row; align-items: stretch; } 
@@ -75,10 +75,16 @@
         
         .placeholder-box { display: flex; align-items: center; justify-content: center; height: 100%; min-height: 300px; color: #3c4c56; font-size: 0.9rem; border: 1px dashed #2a3b47; border-radius: 4px; }
         
+        /* TABS & SWITCH */
         .tabs { display: flex; gap: 5px; margin-bottom: 15px; flex-shrink: 0; }
         .tab-btn { flex: 1; background: #15191d; border: 1px solid var(--hobis-border); color: #5f7481; padding: 12px; cursor: pointer; font-family: 'Orbitron', sans-serif; font-weight: bold; border-radius: 4px; text-align: center; transition: 0.2s; }
         .tab-btn.active { background: rgba(0, 247, 255, 0.15); color: var(--hobis-cyan); border-color: var(--hobis-cyan); box-shadow: 0 0 10px rgba(0, 247, 255, 0.1); }
         
+        .mode-switch { display: flex; background: rgba(0,0,0,0.4); border-radius: 6px; margin-bottom: 15px; padding: 4px; }
+        .mode-opt { flex: 1; text-align: center; padding: 8px; cursor: pointer; color: #5f7481; font-weight: bold; transition: 0.2s; border-radius: 4px; }
+        .mode-opt.active { background: rgba(0, 255, 51, 0.15); color: var(--hobis-green); }
+
+        /* INPUTS */
         .grid-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
         @media (max-width: 600px) { .grid-row { grid-template-columns: 1fr; } }
         
@@ -91,6 +97,7 @@
         .btn:hover { background: rgba(0, 255, 51, 0.2); }
         .btn-outline { padding: 6px 12px; border: 1px solid #3c4c56; border-radius: 4px; background: rgba(0,0,0,0.3); color: #8fa3b0; cursor: pointer; font-size: 0.8rem; }
         
+        /* FILE & LISTS */
         .file-upload-box { border: 1px dashed var(--hobis-cyan); padding: 10px; text-align: center; border-radius: 4px; background: rgba(0, 247, 255, 0.05); margin-bottom: 10px; }
         .cust-list { max-height: 250px; overflow-y: auto; border-top: 1px solid #3c4c56; margin-top:10px; }
         .cust-item { padding: 10px; border-bottom: 1px solid #2a3b47; cursor: pointer; transition: 0.2s; display: flex; justify-content: space-between; align-items: center; }
@@ -102,6 +109,11 @@
         .inv-badge { background: #1a2329; color: var(--hobis-warn); padding: 2px 4px; border-radius: 3px; margin-right: 5px; }
         .inv-meta { color: #8fa3b0; font-size: 0.75rem; display: block; margin-top: 2px; }
         
+        .list-item { background: rgba(255, 255, 255, 0.02); border-left: 3px solid var(--hobis-border); padding: 10px; margin-bottom: 8px; position: relative; border-radius: 0 4px 4px 0; }
+        .del-btn { position: absolute; right: 0; top: 0; color: var(--hobis-alert); cursor: pointer; font-size: 1.5rem; padding: 10px; line-height: 0.8; z-index: 5; }
+        .spec-mini { font-size: 0.75rem; color: #5f7481; margin-top: 4px; }
+
+        /* RIGHT PANEL */
         .info-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
         .info-table td { padding: 6px; border-bottom: 1px solid #2a3b47; vertical-align: top; }
         .info-table .key { color: #8fa3b0; width: 30%; }
@@ -116,33 +128,23 @@
         .naver-btn { background: #2DB400; } .kakao-btn { background: #FEE500; color: black; } .google-btn { background: #4285F4; }
         .share-btn { background: var(--hobis-cyan); color: #000; margin-left: 5px;}
 
-        .route-card { background: rgba(255, 255, 255, 0.02); border-left: 3px solid var(--hobis-warn); padding: 10px; margin-bottom: 10px; border-radius: 4px; position: relative; }
-        .route-del-btn { position: absolute; top: 5px; right: 5px; color: var(--hobis-alert); cursor: pointer; }
-        .route-path-box { background: #0f1215; border: 1px solid #3c4c56; padding: 8px; border-radius: 3px; font-size: 0.85rem; color: #a0c0c0; min-height: 35px; margin-top: 5px; }
-        .route-node { display: inline-block; color: var(--hobis-cyan); padding-right: 5px; }
-        .cargo-list { margin-top: 8px; padding-top: 8px; border-top: 1px dashed #3c4c56; font-size: 0.8rem; color: #8fa3b0; }
-
+        /* RESULT & LOG */
         .chart-container { height: 300px; position: relative; margin-top: 10px; }
         .log-container { max-height: 200px; overflow-y: auto; background: rgba(0,0,0,0.2); padding: 5px; font-size: 0.8rem; color: #a0c0c0; }
         .log-item { padding: 5px; border-bottom: 1px solid #2a3b47; }
-        
-        .hidden { display: none !important; }
-        .mode-switch { display: flex; background: rgba(0,0,0,0.4); border-radius: 6px; margin-bottom: 15px; padding: 4px; }
-        .mode-opt { flex: 1; text-align: center; padding: 8px; cursor: pointer; color: #5f7481; font-weight: bold; transition: 0.2s; border-radius: 4px; }
-        .mode-opt.active { background: rgba(0, 255, 51, 0.15); color: var(--hobis-green); }
-        
         .result-box { margin-top: 10px; }
         .res-val { font-size: 1.5rem; color: var(--hobis-cyan); font-weight: bold; word-break: break-all; }
-        .list-item { background: rgba(255, 255, 255, 0.02); border-left: 3px solid var(--hobis-border); padding: 10px; margin-bottom: 8px; position: relative; border-radius: 0 4px 4px 0; }
-        .del-btn { position: absolute; right: 0; top: 0; color: var(--hobis-alert); cursor: pointer; font-size: 1.5rem; padding: 10px; line-height: 0.8; z-index: 5; }
-        .spec-mini { font-size: 0.75rem; color: #5f7481; margin-top: 4px; }
+        .spec-report { margin-top: 10px; padding: 10px; background: rgba(255, 255, 255, 0.03); border-radius: 4px; border: 1px dotted #3c4c56; color: #8fa3b0; font-size: 0.8rem; line-height: 1.5; }
+        .spec-highlight { color: var(--hobis-green); font-weight: bold; }
+        
+        .hidden { display: none !important; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <div class="top-bar">
-        <h1>HOBIS v4.15</h1>
+        <h1>HOBIS v4.15 patch1</h1>
         <button class="fs-btn" onclick="toggleFullScreen()">⛶ FULL SCREEN</button>
     </div>
 
@@ -258,6 +260,7 @@
                 <div id="resultBox" class="hidden">
                     <div class="res-val" id="resMain">-</div>
                     <div style="font-size:0.9rem; color:#8fa3b0; margin-top:5px;" id="resSub"></div>
+                    <div id="specReportBox"></div> <!-- Spec Report Added -->
                     <div class="chart-container"><canvas id="opsChart"></canvas></div>
                 </div>
             </div>
@@ -268,7 +271,7 @@
 <script src="hobis_db.js"></script>
 
 <script>
-    // --- HOBIS KERNEL V4.15 ---
+    // --- HOBIS KERNEL V4.15 PATCH 1 ---
     let currentMainTab='decay', currentSubMode='decay_forward';
     let currentData=[], myChart=null, nucOptionsHTML="", logHistory=[];
     let customerDB=[], customerHeaders=[], sourceInventory=[], selectedCustomer=null;
@@ -285,10 +288,8 @@
     
     function addDays(dateStr, days) { const r=new Date(dateStr); r.setDate(r.getDate()+days); return r.toISOString().split('T')[0]; }
 
-    // --- MODE SWITCH VISIBILITY FIX ---
     function setMainTab(t){
         currentMainTab=t; document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active')); event.target.classList.add('active');
-        
         if(t==='logistics'){ 
             document.getElementById('calcPanel').classList.add('hidden'); 
             document.getElementById('logisticsLeftPanel').classList.remove('hidden'); 
@@ -303,8 +304,6 @@
             document.getElementById('rightReportPanel').classList.remove('hidden'); 
             
             document.getElementById('panelTitle').innerText=t==='decay'?"DECAY OPS":"SHIELD OPS"; 
-            
-            // VISIBILITY FIX: Use classList remove to ensure display
             if(t === 'decay') {
                 document.getElementById('decayModeSwitch').classList.remove('hidden');
                 document.getElementById('shieldModeSwitch').classList.add('hidden');
@@ -358,7 +357,7 @@
     function toggleMapSize(){ const m=document.getElementById('map'); const b=document.getElementById('mapExpandBtn'); const f=m.classList.toggle('map-fullscreen'); b.innerHTML=f?"↩ SHRINK":"⛶ EXPAND"; setTimeout(()=>map.invalidateSize(),100); }
     function openMap(t){ if(!selectedCustomer)return; const q=encodeURIComponent(selectedCustomer._displayAddr); window.open(t==='naver'?`https://map.naver.com/v5/search/${q}`:t==='kakao'?`https://map.kakao.com/link/search/${q}`:`http://google.com/maps?q=${q}`,'_blank'); }
 
-    // --- CALC UI (FIXED: SHIELD FORWARD INPUT MODE) ---
+    // --- CALC UI ---
     function renderInputs() {
         const area = document.getElementById('inputArea'); area.innerHTML = "";
         
@@ -382,7 +381,7 @@
                 <div class="grid-row"><div><label>Target (At)</label><input type="number" id="inTargetAct"></div><div><label>Start</label><input type="date" id="dateStart"></div></div>`;
             document.getElementById('dateStart').value = new Date().toISOString().split('T')[0]; updateRowSpec(document.getElementById('nucSelect'));
         } 
-        // 3. SHIELD FORWARD (PATCH 5: INPUT MODE SELECTOR)
+        // 3. SHIELD FORWARD
         else if(currentSubMode === 'shield_forward') {
             area.innerHTML = `
                 <div style="margin-bottom:15px;">
@@ -436,13 +435,11 @@
 
     // --- ROW & UNIT HELPERS ---
     function addSourceRow() {
-        // For Shield Forward, unit depends on inputType
         let unitOpts = getUnitOpts('act');
         if (currentSubMode === 'shield_forward') {
             const inType = document.getElementById('inputType') ? document.getElementById('inputType').value : 'act';
             unitOpts = getUnitOpts(inType);
         }
-
         const div = document.createElement('div'); div.className = 'list-item source-row';
         div.innerHTML = `<div class="del-btn" onclick="this.parentElement.remove()">×</div><div class="grid-row" style="margin:0; gap:5px;"><div style="flex:1"><select class="src-select" onchange="updateRowSpec(this)">${nucOptionsHTML}</select></div><div style="flex:1"><div class="input-group"><input type="number" class="src-val"><select class="src-unit">${unitOpts}</select></div></div></div><div class="spec-mini">-</div>`;
         document.getElementById('sourceList').appendChild(div); updateRowSpec(div.querySelector('.src-select'));
@@ -462,15 +459,10 @@
     function updateOutUnit() { document.getElementById('outUnit').innerHTML = getUnitOpts(document.getElementById('outType').value); }
     function updateReverseInUnit() { document.getElementById('inUnit').innerHTML = getUnitOpts(document.getElementById('inputType').value); }
     function updateReverseTargetUnit() { document.getElementById('targetUnit').innerHTML = getUnitOpts(document.getElementById('targetType').value); }
-    
-    // PATCH 5: Function to update units in dynamic rows when Shield Forward input type changes
     function updateShieldFwdInputUnit() {
         const inType = document.getElementById('inputType').value;
         const newOpts = getUnitOpts(inType);
-        document.querySelectorAll('.src-unit').forEach(sel => {
-            const oldVal = sel.value; // Try to keep value if possible (unlikely but good practice)
-            sel.innerHTML = newOpts;
-        });
+        document.querySelectorAll('.src-unit').forEach(sel => { sel.innerHTML = newOpts; });
     }
 
     function getNucData(id) { if(id==="MANUAL") return {id:"MANUAL"}; return currentData.find(n=>n.id===id); }
@@ -522,62 +514,63 @@
         }
         else if(currentSubMode === 'shield_forward') {
             entry.mode="SHIELD_FWD"; const dist=parseFloat(document.getElementById('inDist').value)||1;
-            const inType = document.getElementById('inputType').value; // PATCH 5
+            const inType = document.getElementById('inputType').value; 
             const ot=document.getElementById('outType').value; const ou=document.getElementById('outUnit').value;
-            let srcs=[], lays=[]; 
+            let srcs=[], lays=[], reportSpecHTML = "";
             
             document.querySelectorAll('.source-row').forEach(r=>{ 
                 const n=getReadyNuc(r.querySelector('.src-select').value); 
                 const v=parseFloat(r.querySelector('.src-val').value)||0; 
                 if(n&&v>0) {
-                    // Normalize input to common base (Ci or mSv/h)
-                    // If inType is 'act', convert to Ci
-                    // If inType is 'dose', convert to mSv/h
                     let val = 0;
                     if(inType === 'act') val = v * UNIT_ACT[r.querySelector('.src-unit').value];
                     else val = v * UNIT_DOSE[r.querySelector('.src-unit').value];
-                    
                     srcs.push({n:n, val:val}); 
+                    reportSpecHTML += `<div><strong>${n.id}:</strong> Γ=${n.gamma}</div>`;
                 }
             });
-            document.querySelectorAll('.shield-layer').forEach(r=>{ lays.push({m:r.querySelector('.mat-select').value, t:parseFloat(r.querySelector('.thk-input').value)||0}); });
+            document.querySelectorAll('.shield-layer').forEach(r=>{ 
+                const m=r.querySelector('.mat-select').value;
+                const t=parseFloat(r.querySelector('.thk-input').value)||0;
+                lays.push({m:m, t:t});
+            });
             
             let totalRes=0; 
-            
             srcs.forEach(s=>{ 
                 let trans=1.0; 
-                lays.forEach(l=>{ let h=(s.n.hvl&&s.n.hvl[l.m])?s.n.hvl[l.m]:(l.m==='Lead'?s.n.hvl['Lead']:0); if(h>0)trans*=Math.pow(0.5,l.t/h); }); 
-                
-                // Logic based on Input Mode
+                lays.forEach(l=>{ 
+                    let h=(s.n.hvl&&s.n.hvl[l.m])?s.n.hvl[l.m]:(l.m==='Lead'?s.n.hvl['Lead']:0); 
+                    if(h>0)trans*=Math.pow(0.5,l.t/h); 
+                    // Add HVL info to report only once per mat/nuc pair? Simplified:
+                    reportSpecHTML += `<div><strong>${l.m} HVL (${s.n.id}):</strong> ${h}mm</div>`;
+                }); 
                 if (inType === 'act') {
-                    // Input: Ci -> Calc Dose or Act
                     if(ot==='dose') totalRes += s.n.gamma * s.val * (1/(dist*dist)) * trans;
                     else totalRes += s.val * trans;
                 } else {
-                    // Input: mSv/h (@1m assumed) -> Calc Dose or Act
-                    // Dose @ dist = Dose@1m * (1/d^2) * Trans
                     let d = s.val * (1/(dist*dist)) * trans;
                     if(ot==='dose') totalRes += d;
-                    else totalRes += d / s.n.gamma; // Convert back to Act
+                    else totalRes += d / s.n.gamma;
                 }
             });
             
-            // Final Unit Conversion
             const finalVal = totalRes * (ot==='dose'?(1/UNIT_DOSE[ou]):(1/UNIT_ACT[ou]));
-            
             entry.resultVal=finalVal.toExponential(4); entry.resultUnit=ou;
             showResult(`${entry.resultVal} ${ou}`, ot); addToLog(entry);
             
-            // Chart (Primary Layer Curve)
+            // Spec Report Injection
+            document.getElementById('specReportBox').innerHTML = `<div class="spec-report">${reportSpecHTML}</div>`;
+
+            // Chart
             if(lays.length){ 
                 const L=[], D=[], pm=lays[0].m, pt=lays[0].t; 
                 let maxThk = pt*2 || 50; 
+                const yAxisLabel = ot==='dose' ? `Dose Rate (${ou})` : `Activity (${ou})`;
                 for(let i=0;i<=100;i++){ 
                     let x=i*(maxThk/100), sum=0; 
                     srcs.forEach(s=>{ 
-                        let tr=1.0, h1=(s.n.hvl&&s.n.hvl[pm])?src.n.hvl[pm]:0; if(h1>0)tr*=Math.pow(0.5,x/h1); 
-                        for(let k=1;k<lays.length;k++) { let l=lays[k], h=(s.n.hvl&&s.n.hvl[l.m])?src.n.hvl[l.m]:0; if(h>0)tr*=Math.pow(0.5,l.t/h); } 
-                        
+                        let tr=1.0, h1=(s.n.hvl&&s.n.hvl[pm])?s.n.hvl[pm]:0; if(h1>0)tr*=Math.pow(0.5,x/h1); 
+                        for(let k=1;k<lays.length;k++) { let l=lays[k], h=(s.n.hvl&&s.n.hvl[l.m])?s.n.hvl[l.m]:0; if(h>0)tr*=Math.pow(0.5,l.t/h); } 
                         if (inType === 'act') {
                              if(ot==='dose') sum += s.n.gamma * s.val * (1/(dist*dist)) * tr;
                              else sum += s.val * tr;
@@ -586,9 +579,9 @@
                              if(ot==='dose') sum += d; else sum += d / s.n.gamma;
                         }
                     }); 
-                    D.push(sum*(ot==='dose'?(1/UNIT_DOSE[ou]):(1/UNIT_ACT[outUnit]))); 
+                    D.push(sum*(ot==='dose'?(1/UNIT_DOSE[ou]):(1/UNIT_ACT[ou]))); 
                 } 
-                drawChart(L,D,"Shield","mm",pt,finalVal); 
+                drawChart(L,D,yAxisLabel,"Thickness (mm)",pt,finalVal); 
             }
         }
         else { // Shield Reverse
@@ -596,21 +589,15 @@
             const n=getReadyNuc(document.getElementById('nucSelect').value); 
             const iv=parseFloat(document.getElementById('inVal').value); const target=parseFloat(document.getElementById('targetVal').value); 
             const dist=parseFloat(document.getElementById('inDist').value)||1; const mat=document.getElementById('targetMat').value;
-            const inType = document.getElementById('inputType').value; // PATCH 5
+            const inType = document.getElementById('inputType').value; 
             
             if(n&&iv&&target){ 
                 let s=0,t=0; 
-                if(inType === 'act') {
-                    s = n.gamma * (iv*UNIT_ACT[document.getElementById('inUnit').value]) * (1/(dist*dist));
-                } else {
-                    s = (iv*UNIT_DOSE[document.getElementById('inUnit').value]) * (1/(dist*dist));
-                }
+                if(inType === 'act') s = n.gamma * (iv*UNIT_ACT[document.getElementById('inUnit').value]) * (1/(dist*dist));
+                else s = (iv*UNIT_DOSE[document.getElementById('inUnit').value]) * (1/(dist*dist));
 
-                if(document.getElementById('targetType').value==='dose'){ 
-                    t=target*UNIT_DOSE[document.getElementById('targetUnit').value]; 
-                } else { 
-                    t = n.gamma * (target*UNIT_ACT[document.getElementById('targetUnit').value]) * (1/(dist*dist));
-                } 
+                if(document.getElementById('targetType').value==='dose') t=target*UNIT_DOSE[document.getElementById('targetUnit').value];
+                else t = n.gamma * (target*UNIT_ACT[document.getElementById('targetUnit').value]) * (1/(dist*dist));
                 
                 const req=t/s;
                 if(req>=1) showResult("0 mm","None"); 
@@ -620,8 +607,18 @@
                         const thk=h*(Math.log(req)/Math.log(0.5)); 
                         entry.resultVal=thk.toFixed(2); entry.resultUnit="mm"; 
                         showResult(`${thk.toFixed(2)} mm`,mat); addToLog(entry); 
-                        const L=[], D=[]; for(let i=0;i<=100;i++){ let x=i*(thk*1.5/100); L.push(x.toFixed(1)); D.push(s*Math.pow(0.5,x/h)); } 
-                        drawChart(L,D,"Atten","mm",thk,t); 
+                        
+                        // Spec Report Injection
+                        document.getElementById('specReportBox').innerHTML = `<div class="spec-report"><div><strong>${n.id}:</strong> Γ=${n.gamma}</div><div><strong>HVL (${mat}):</strong> ${h}mm</div></div>`;
+
+                        const L=[], D=[]; 
+                        const yAxisLabel = document.getElementById('targetType').value==='dose' ? 
+                                           `Dose Rate (${document.getElementById('targetUnit').value})` : 
+                                           `Activity (${document.getElementById('targetUnit').value})`;
+                        for(let i=0;i<=100;i++){ 
+                            let x=i*(thk*1.5/100); L.push(x.toFixed(1)); D.push(s*Math.pow(0.5,x/h)); 
+                        } 
+                        drawChart(L,D,yAxisLabel,"Thickness (mm)",thk,t); 
                     } 
                 } 
             }
@@ -686,7 +683,7 @@
                         }
                     } 
                 },
-                scales:{ x:{title:{display:true, text:xl}, grid:{color:'#1f2b33'}}, y:{grid:{color:'#1f2b33'}} }
+                scales:{ x:{title:{display:true, text:xl}, grid:{color:'#1f2b33'}}, y:{title:{display:true, text:lbl}, grid:{color:'#1f2b33'}} }
             }
         });
     }
