@@ -16,7 +16,7 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     
     <style>
-        /* HOBIS UI SYSTEM V4.15 PATCH 2 (GRAPH & SPEC FIXED) */
+        /* HOBIS UI SYSTEM V4.15 PATCH 3 (REPORT & GRAPH FIX) */
         :root {
             --hobis-green: #00ff33;
             --hobis-cyan: #00f7ff;
@@ -75,7 +75,7 @@
         
         .placeholder-box { display: flex; align-items: center; justify-content: center; height: 100%; min-height: 300px; color: #3c4c56; font-size: 0.9rem; border: 1px dashed #2a3b47; border-radius: 4px; }
         
-        /* TABS & SWITCH */
+        /* TABS */
         .tabs { display: flex; gap: 5px; margin-bottom: 15px; flex-shrink: 0; }
         .tab-btn { flex: 1; background: #15191d; border: 1px solid var(--hobis-border); color: #5f7481; padding: 12px; cursor: pointer; font-family: 'Orbitron', sans-serif; font-weight: bold; border-radius: 4px; text-align: center; transition: 0.2s; }
         .tab-btn.active { background: rgba(0, 247, 255, 0.15); color: var(--hobis-cyan); border-color: var(--hobis-cyan); box-shadow: 0 0 10px rgba(0, 247, 255, 0.1); }
@@ -97,7 +97,7 @@
         .btn:hover { background: rgba(0, 255, 51, 0.2); }
         .btn-outline { padding: 6px 12px; border: 1px solid #3c4c56; border-radius: 4px; background: rgba(0,0,0,0.3); color: #8fa3b0; cursor: pointer; font-size: 0.8rem; }
         
-        /* FILE & LISTS */
+        /* LISTS */
         .file-upload-box { border: 1px dashed var(--hobis-cyan); padding: 10px; text-align: center; border-radius: 4px; background: rgba(0, 247, 255, 0.05); margin-bottom: 10px; }
         .cust-list { max-height: 250px; overflow-y: auto; border-top: 1px solid #3c4c56; margin-top:10px; }
         .cust-item { padding: 10px; border-bottom: 1px solid #2a3b47; cursor: pointer; transition: 0.2s; display: flex; justify-content: space-between; align-items: center; }
@@ -105,6 +105,7 @@
         .cust-name { color: var(--hobis-cyan); font-weight: bold; }
         .cust-addr { color: #8fa3b0; font-size: 0.8rem; }
         .item-add-btn { background: transparent; border: 1px solid #5f7481; color: #5f7481; padding: 2px 6px; border-radius: 3px; font-size: 0.75rem; margin-left: 10px; }
+
         .inv-item { padding: 8px; border-bottom: 1px solid #2a3b47; font-size: 0.85rem; display: flex; justify-content: space-between; align-items: center; }
         .inv-badge { background: #1a2329; color: var(--hobis-warn); padding: 2px 4px; border-radius: 3px; margin-right: 5px; }
         .inv-meta { color: #8fa3b0; font-size: 0.75rem; display: block; margin-top: 2px; }
@@ -141,15 +142,16 @@
         .result-box { margin-top: 10px; }
         .res-val { font-size: 1.5rem; color: var(--hobis-cyan); font-weight: bold; word-break: break-all; }
         
-        /* SPEC REPORT */
+        /* SPEC REPORT STYLE */
         .spec-report { 
             margin-top: 10px; padding: 10px; 
             background: rgba(0, 255, 51, 0.05); 
             border: 1px solid #2a3b47; border-radius: 4px;
-            color: #8fa3b0; font-size: 0.85rem; line-height: 1.6; 
+            color: #a0c0c0; font-size: 0.85rem; line-height: 1.6; 
         }
-        .spec-item { margin-bottom: 4px; display: block; }
-        .spec-label { color: var(--hobis-green); font-weight: bold; margin-right: 5px; }
+        .spec-row { display: flex; justify-content: space-between; border-bottom: 1px dotted #3c4c56; padding: 2px 0; }
+        .spec-row:last-child { border-bottom: none; }
+        .spec-key { color: var(--hobis-green); font-weight: bold; }
         
         .hidden { display: none !important; }
     </style>
@@ -158,7 +160,7 @@
 
 <div class="container">
     <div class="top-bar">
-        <h1>HOBIS v4.15 PATCH2</h1>
+        <h1>HOBIS v4.15 patch3</h1>
         <button class="fs-btn" onclick="toggleFullScreen()">⛶ FULL SCREEN</button>
     </div>
 
@@ -274,7 +276,7 @@
                 <div id="resultBox" class="hidden">
                     <div class="res-val" id="resMain">-</div>
                     <div style="font-size:0.9rem; color:#8fa3b0; margin-top:5px;" id="resSub"></div>
-                    <div id="specReportBox"></div> <!-- SPEC REPORT AREA -->
+                    <div id="specReportBox"></div> <!-- SPEC REPORT -->
                     <div class="chart-container"><canvas id="opsChart"></canvas></div>
                 </div>
             </div>
@@ -285,7 +287,7 @@
 <script src="hobis_db.js"></script>
 
 <script>
-    // --- HOBIS KERNEL V4.15 PATCH 2 ---
+    // --- HOBIS KERNEL V4.15 PATCH 3 ---
     let currentMainTab='decay', currentSubMode='decay_forward';
     let currentData=[], myChart=null, nucOptionsHTML="", logHistory=[];
     let customerDB=[], customerHeaders=[], sourceInventory=[], selectedCustomer=null;
@@ -339,7 +341,7 @@
         document.getElementById('resultBox').classList.add('hidden'); 
     }
 
-    // --- LOGISTICS OPS ---
+    // --- LOGISTICS OPS (Preserved) ---
     function handleCustFile(e){ const f=e.target.files[0]; if(!f)return; const r=new FileReader(); r.onload=function(ev){ parseCustCSV(ev.target.result); document.getElementById('custFileStatus').innerText=`LOADED: ${f.name} (${customerDB.length})`; document.getElementById('custFileStatus').style.color="var(--hobis-green)"; }; r.readAsText(f, document.getElementById('custEncoding').value); }
     function parseCustCSV(txt){
         const lines=txt.split(/\r\n|\n/); customerHeaders=lines[0].split(',').map(h=>h.replace(/"/g,'').trim()); customerDB=[];
@@ -444,7 +446,7 @@
         }
     }
 
-    // --- HELPERS ---
+    // --- ROW & UNIT HELPERS ---
     function addSourceRow() {
         let unitOpts = getUnitOpts('act');
         if (currentSubMode === 'shield_forward') {
@@ -500,6 +502,12 @@
             entry.resultVal=res.toExponential(4); entry.resultUnit=outUnit;
             showResult(`${entry.resultVal} ${outUnit}`, `Elapsed: ${days.toFixed(1)}d`);
             addToLog(entry);
+            
+            // Spec Report
+            let specHTML = "";
+            srcs.forEach(s => specHTML += `<div class="spec-row"><span class="spec-key">${s.n.id}</span> <span class="spec-val">HL: ${s.n.hl}${s.n.unit}</span></div>`);
+            document.getElementById('specReportBox').innerHTML = `<div class="spec-report">${specHTML}</div>`;
+
             const L=[], D=[]; let range=days>0?days*1.2:365;
             for(let i=0;i<=100;i++){ 
                 let t=i*(range/100); let sum=0; srcs.forEach(s=>sum+=s.A0*Math.pow(0.5,t/getHLDays(s.n))); 
@@ -519,6 +527,10 @@
                 entry.resultVal=dDateStr; entry.resultUnit="(Date)"; 
                 showResult(`${days.toFixed(1)} Days`, `Reach: ${dDateStr}`);
                 addToLog(entry);
+                
+                // Spec Report
+                document.getElementById('specReportBox').innerHTML = `<div class="spec-report"><div class="spec-row"><span class="spec-key">${n.id}</span> <span class="spec-val">HL: ${n.hl}${n.unit}</span></div></div>`;
+                
                 const L=[], D=[]; for(let i=0;i<=100;i++){ let t=i*(days*1.2/100); L.push(t.toFixed(1)); D.push(A0*Math.pow(0.5,t/getHLDays(n))); }
                 drawChart(L,D,"Decay","Days",days,At, sDate);
             }
@@ -537,7 +549,7 @@
                     if(inType === 'act') val = v * UNIT_ACT[r.querySelector('.src-unit').value];
                     else val = v * UNIT_DOSE[r.querySelector('.src-unit').value];
                     srcs.push({n:n, val:val}); 
-                    reportSpecHTML += `<span class="spec-item"><span class="spec-label">${n.id}:</span> Γ=${n.gamma}</span>`;
+                    reportSpecHTML += `<div class="spec-row"><span class="spec-key">${n.id}</span> <span class="spec-val">Γ=${n.gamma}</span></div>`;
                 }
             });
             document.querySelectorAll('.shield-layer').forEach(r=>{ 
@@ -552,7 +564,7 @@
                 lays.forEach(l=>{ 
                     let h=(s.n.hvl&&s.n.hvl[l.m])?s.n.hvl[l.m]:(l.m==='Lead'?s.n.hvl['Lead']:0); 
                     if(h>0)trans*=Math.pow(0.5,l.t/h); 
-                    reportSpecHTML += `<span class="spec-item"><span class="spec-label">${l.m} HVL:</span> ${h}mm (${s.n.id})</span>`;
+                    reportSpecHTML += `<div class="spec-row"><span class="spec-key">${l.m} HVL (${s.n.id})</span> <span class="spec-val">${h}mm</span></div>`;
                 }); 
                 if (inType === 'act') {
                     if(ot==='dose') totalRes += s.n.gamma * s.val * (1/(dist*dist)) * trans;
@@ -568,7 +580,7 @@
             entry.resultVal=finalVal.toExponential(4); entry.resultUnit=ou;
             showResult(`${entry.resultVal} ${ou}`, ot); addToLog(entry);
             
-            // Spec Report Injection (PATCH 2)
+            // Spec Report Injection (PATCH 3)
             document.getElementById('specReportBox').innerHTML = `<div class="spec-report">${reportSpecHTML}</div>`;
 
             // Chart
@@ -618,8 +630,8 @@
                         entry.resultVal=thk.toFixed(2); entry.resultUnit="mm"; 
                         showResult(`${thk.toFixed(2)} mm`,mat); addToLog(entry); 
                         
-                        // Spec Report Injection (PATCH 2)
-                        document.getElementById('specReportBox').innerHTML = `<div class="spec-report"><span class="spec-item"><span class="spec-label">${n.id}:</span> Γ=${n.gamma}</span> <span class="spec-item"><span class="spec-label">${mat} HVL:</span> ${h}mm</span></div>`;
+                        // Spec Report Injection (PATCH 3)
+                        document.getElementById('specReportBox').innerHTML = `<div class="spec-report"><div class="spec-row"><span class="spec-key">${n.id}:</span> <span class="spec-val">Γ=${n.gamma}</span></div><div class="spec-row"><span class="spec-key">${mat} HVL:</span> <span class="spec-val">${h}mm</span></div></div>`;
 
                         const L=[], D=[]; 
                         const yAxisLabel = document.getElementById('targetType').value==='dose' ? 
